@@ -1,0 +1,46 @@
+<!-- License: by cs.baguosps@gmail.com -->
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Review Audit | GriView</title>
+    <link rel="stylesheet" href="audit.css">
+</head>
+<body>
+    <main class="audit-shell">
+        <header class="audit-header">
+            <a class="brand" href="http://localhost/griview/index.php?c=review&a=audit" target="_blank"><span class="brand-mark">G</span> GriView <span class="brand-divider">/</span> Review Audit</a>
+            <div class="header-actions">
+                <a id="openInGriView" class="export-button" style="background:#10b981;border-color:#10b981;text-decoration:none;display:inline-flex;align-items:center;gap:6px;" href="http://localhost/griview/index.php?c=review&a=audit" target="_blank" title="Buka dan lihat ulasan di GriView Web"><span>↗</span> Buka GriView Web</a>
+                <button id="exportXls" class="export-button" type="button" disabled><span aria-hidden="true">↓</span> Export XLS</button>
+                <button id="restartAudit" class="restart-button" type="button">Audit ulang</button>
+            </div>
+        </header>
+        <section class="business-panel">
+            <div class="business-icon">⌖</div>
+            <div class="business-copy">
+                <span class="eyebrow">GOOGLE BUSINESS PROFILE</span>
+                <h1 id="placeName">Menyiapkan audit...</h1>
+                <p id="address"></p>
+                <div id="syncStatus" style="margin-top:6px;font-size:12px;font-weight:600;color:#a6ec63;display:flex;align-items:center;gap:6px;"></div>
+            </div>
+            <div class="run-status"><span class="status-dot"></span><span id="statusText">Membuka Google Maps</span></div>
+        </section>
+        <section class="metric-grid" aria-label="Ringkasan hasil audit">
+            <article class="metric metric-total"><span>Total diperiksa</span><strong id="totalCount">0</strong><small>Maksimal 1.000 review</small></article>
+            <article class="metric metric-priority"><span>Prioritas</span><strong id="priorityCount">0</strong><small>Rating 1-2 bintang</small></article>
+            <article class="metric metric-unanswered"><span>Belum dibalas</span><strong id="unansweredCount">0</strong><small>Menunggu respons owner</small></article>
+            <article class="metric metric-clear"><span>Lolos pemeriksaan</span><strong id="clearCount">0</strong><small>Tidak ada temuan dasar</small></article>
+        </section>
+        <section class="review-panel">
+            <div class="review-heading"><div><h2>Review yang diperiksa</h2><p id="resultNote">Menunggu hasil dari Google Maps...</p></div><label class="search-box"><span>⌕</span><input id="searchReviews" type="search" placeholder="Cari reviewer atau isi review"></label></div>
+            <div class="progress-wrap"><div class="progress-track"><i id="progressBar"></i></div><span id="progressText">0 / 1.000</span></div>
+            <div class="table-scroll"><table><thead><tr><th>Reviewer</th><th>Komentar</th><th>Jumlah kata</th><th>Foto kontributor</th><th>Foto review</th><th>Temuan audit</th></tr></thead><tbody id="reviewRows"></tbody></table></div>
+            <div class="table-footer"><span id="visibleCount"></span><button id="loadMore" type="button" hidden>Muat lagi</button></div>
+        </section>
+        <p class="disclaimer">Pemeriksaan ini menandai review yang perlu diperhatikan. Ini bukan penilaian keaslian review atau pelanggaran kebijakan Google.</p>
+    </main>
+    <script src="audit.js"></script>
+</body>
+</html>

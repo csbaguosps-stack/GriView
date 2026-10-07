@@ -1,0 +1,35 @@
+/* License: by cs.baguosps@gmail.com */
+.griview-audit-tools {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 10px 0 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.griview-audit-launch {
+    min-height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 4px 12px !important;
+    border: 1px solid #d8dbe2 !important;
+    border-radius: 3px !important;
+    background: #f7f7f8 !important;
+    color: #202124 !important;
+    font: 600 12px Arial, sans-serif !important;
+    cursor: pointer !important;
+}
+
+.griview-audit-launch:hover { background: #eceef4 !important; }
+.griview-audit-launch:disabled { opacity: .65 !important; cursor: progress !important; }
+.griview-audit-symbol { color: #6672ec !important; font-size: 15px !important; font-weight: 800 !important; }
+
+@keyframes griview-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes griview-fadein {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
