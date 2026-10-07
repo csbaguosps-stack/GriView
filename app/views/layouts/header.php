@@ -36,8 +36,9 @@ $hasThumbnail = !empty($globalAppConfig['app_thumbnail']) && file_exists($thumbF
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Chart.js -->
+    <!-- Chart.js & SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- GriView Application Base Metadata -->
     <meta name="griview-app" content="<?= $appName ?>">
     <meta name="griview-base-url" content="<?= BASE_URL ?>">

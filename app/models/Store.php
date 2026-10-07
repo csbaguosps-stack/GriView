@@ -1,7 +1,7 @@
 <?php
 /* License: by cs.baguosps@gmail.com */
 /**
- * Model Store - Menangani data 13 cabang/store Winsee Optik via JSON
+ * Model Store - Menangani data cabang & lokasi bisnis via JSON
  */
 require_once __DIR__ . '/../helpers/JsonDatabase.php';
 
@@ -113,5 +113,34 @@ class Store {
         $stores = $this->loadAll();
         $new = array_filter($stores, fn($s) => (int)($s['id'] ?? 0) !== $id);
         return $this->saveAll(array_values($new));
+    }
+
+    /**
+     * Hapus beberapa cabang sekaligus berdasarkan array ID
+     */
+    public function deleteBatch(array $ids): int {
+        $ids = array_map('intval', $ids);
+        if (empty($ids)) return 0;
+
+        $stores = $this->loadAll();
+        $initialCount = count($stores);
+        $new = array_filter($stores, fn($s) => !in_array((int)($s['id'] ?? 0), $ids, true));
+        $this->saveAll(array_values($new));
+        return $initialCount - count($new);
+    }
+
+    /**
+     * Hapus semua cabang store dari database
+     */
+    public function deleteAll(): bool {
+        return $this->saveAll([]);
+    }
+
+    /**
+     * Muat ulang data cabang contoh (opsional oleh user)
+     */
+    public function seedSamples(): int {
+        JsonDatabase::seedStores();
+        return count($this->getAll());
     }
 }

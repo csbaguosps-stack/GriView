@@ -68,6 +68,8 @@ class SettingsController {
         $settings['app_name']    = trim($_POST['app_name'] ?? 'GriView');
         if (empty($settings['app_name'])) $settings['app_name'] = 'GriView';
         $settings['app_tagline'] = trim($_POST['app_tagline'] ?? 'Review audit & reputation workflow');
+        $settings['business_group'] = trim($_POST['business_group'] ?? 'Semua Cabang');
+        if (empty($settings['business_group'])) $settings['business_group'] = 'Semua Cabang';
         $settings['app_footer']  = trim($_POST['app_footer'] ?? 'GriView - Google Business Review Audit & Analytics');
 
         // 2. Teks Branding Ekstensi Chrome

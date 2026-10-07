@@ -112,6 +112,14 @@ async function saveProgress(job, message) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender) => {
+    if (message.type === 'ARM_PENDING_AUDIT') {
+        const audit = message.audit;
+        if (audit) {
+            chrome.storage.local.set({ griview_armed_audit: audit });
+        }
+        return;
+    }
+
     if (message.type === 'START_REVIEW_AUDIT') {
         const tabId = sender.tab?.id || 'popup';
         const placeKey = (message.place?.placeName || '').trim();
@@ -133,13 +141,50 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     }
 
     if (message.type === 'MAPS_AUDIT_READY' && sender.tab?.id) {
-        getJobForTab(sender.tab.id).then(job => {
+        getJobForTab(sender.tab.id).then(async job => {
             if (job) {
                 chrome.tabs.sendMessage(sender.tab.id, {
                     type: 'BEGIN_REVIEW_AUDIT',
                     jobId: job.jobId,
                     placeName: job.placeName,
-                    maxReviews: MAX_REVIEWS
+                    maxReviews: job.maxReviews || MAX_REVIEWS
+                });
+                return;
+            }
+
+            // Periksa apakah ada audit yang dipersenjatai dari GriView Web
+            const stored = await chrome.storage.local.get('griview_armed_audit');
+            const armed = stored.griview_armed_audit;
+            if (armed && (Date.now() - (armed.timestamp || 0) < 120000)) {
+                // Tab ini adalah target audit!
+                await chrome.storage.local.remove('griview_armed_audit');
+                const jobId = makeJobId();
+                const mapping = await chrome.storage.local.get(jobByTabKey);
+                const jobsByTab = mapping[jobByTabKey] || {};
+                jobsByTab[String(sender.tab.id)] = jobId;
+
+                const max = armed.maxReviews || MAX_REVIEWS;
+                await chrome.storage.local.set({
+                    [jobByTabKey]: jobsByTab,
+                    [`audit:${jobId}`]: {
+                        jobId,
+                        tabId: sender.tab.id,
+                        placeName: armed.placeName || '',
+                        address: '',
+                        mapsUrl: sender.tab.url || '',
+                        status: 'starting',
+                        count: 0,
+                        maxReviews: max,
+                        reviews: [],
+                        message: 'Memulai auto-audit ulasan...'
+                    }
+                });
+
+                chrome.tabs.sendMessage(sender.tab.id, {
+                    type: 'BEGIN_REVIEW_AUDIT',
+                    jobId: jobId,
+                    placeName: armed.placeName || '',
+                    maxReviews: max
                 });
             }
         });

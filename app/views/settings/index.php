@@ -191,13 +191,19 @@ $extIconPath   = file_exists(ROOT_DIR . '/chrome-extension/icons/icon-128.png') 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Nama Aplikasi Web <span class="text-danger">*</span></label>
                                 <input type="text" name="app_name" class="form-control" value="<?= htmlspecialchars($settings['app_name'] ?? 'GriView') ?>" required>
-                                <div class="form-text">Nama utama brand (contoh: <code>GriView</code>, <code>Winsee Review Hub</code>).</div>
+                                <div class="form-text">Nama utama brand (contoh: <code>GriView</code>, <code>Bisnis Review Hub</code>).</div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Slogan / Tagline Web</label>
                                 <input type="text" name="app_tagline" class="form-control" value="<?= htmlspecialchars($settings['app_tagline'] ?? 'Review audit & reputation workflow') ?>">
                                 <div class="form-text">Deskripsi singkat di bawah nama brand pada navbar dan judul tab.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nama Grup Bisnis / Jaringan Usaha</label>
+                                <input type="text" name="business_group" class="form-control" value="<?= htmlspecialchars($settings['business_group'] ?? 'Semua Cabang') ?>" placeholder="Contoh: Semua Cabang, Retail Group, dsb">
+                                <div class="form-text">Nama kelompok cabang bisnis yang ditampilkan pada badge status profil (contoh: <code>Semua Cabang</code>, <code>Grup Bisnis</code>).</div>
                             </div>
 
                             <div class="mb-2">
@@ -512,7 +518,7 @@ $extIconPath   = file_exists(ROOT_DIR . '/chrome-extension/icons/icon-128.png') 
                                 <label class="form-label fw-bold mb-1">
                                     <i class="bi bi-globe me-1 text-primary"></i> Base URL Kustom untuk Produksi Massal (Opsional)
                                 </label>
-                                <input type="url" name="custom_base_url" class="form-control" placeholder="Contoh: https://griview.winseeoptik.com" value="<?= htmlspecialchars($settings['custom_base_url'] ?? '') ?>">
+                                <input type="url" name="custom_base_url" class="form-control" placeholder="Contoh: https://griview.domainanda.com" value="<?= htmlspecialchars($settings['custom_base_url'] ?? '') ?>">
                                 <div class="form-text">
                                     Biarkan kosong untuk menggunakan deteksi URL otomatis (<code><?= BASE_URL ?></code>). Isi kolom ini jika aplikasi berada di balik reverse proxy atau jika ingin memaksa domain produksi tertentu agar ekstensi Chrome selalu sinkron ke alamat tersebut.
                                 </div>

@@ -5,9 +5,25 @@
     if (window.__griviewAuditButtonInstalled) return;
     window.__griviewAuditButtonInstalled = true;
 
-    const isAutoAudit = searchParams.get('griview_auto_audit') === '1' ||
-                        searchParams.get('griview_auto') === '1' ||
-                        location.hash.includes('griview_auto_audit');
+    let isAutoAudit = searchParams.get('griview_auto_audit') === '1' ||
+                      searchParams.get('griview_auto') === '1' ||
+                      location.hash.includes('griview_auto_audit');
+
+    // Cek juga armed audit dari GriView Web di storage
+    if (!isAutoAudit && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get('griview_armed_audit').then(stored => {
+            if (stored.griview_armed_audit && (Date.now() - (stored.griview_armed_audit.timestamp || 0) < 120000)) {
+                isAutoAudit = true;
+                showAutoNotification('Auto-Audit terdeteksi dari GriView Web, mendeteksi profil...');
+                let pCount = 0;
+                const pInterval = setInterval(() => {
+                    pCount++;
+                    checkAndAutoRun();
+                    if (autoTriggered || pCount > 40) clearInterval(pInterval);
+                }, 300);
+            }
+        }).catch(() => {});
+    }
 
     let autoTriggered = false;
 

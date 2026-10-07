@@ -36,6 +36,7 @@ class PlaceConfig {
             'app_favicon'          => $faviconPath,
             'app_thumbnail'        => $thumbnailPath,
             'app_footer'           => $s['app_footer']           ?? 'GriView - Google Business Review Audit & Analytics',
+            'business_group'       => $s['business_group']       ?? 'Semua Cabang',
 
             // ─── Branding & Ikon Ekstensi Chrome ───
             'ext_name'             => $s['ext_name']             ?? 'GriView Review Audit',
@@ -92,6 +93,7 @@ class PlaceConfig {
             'app_favicon'          => '',
             'app_thumbnail'        => '',
             'app_footer'           => 'GriView - Google Business Review Audit & Analytics',
+            'business_group'       => 'Semua Cabang',
             'ext_name'             => 'GriView Review Audit',
             'ext_version'          => '1.0.1',
             'ext_description'      => 'Audit hingga 1.000 ulasan Google Maps dengan scroll otomatis.',

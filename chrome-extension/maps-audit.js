@@ -377,23 +377,32 @@
             throw new Error('Kontrol jumlah ulasan sudah diklik, tetapi Google Search tidak membuka drawer review. Link #lrd/CID tidak tersedia pada profil ini.');
         }
 
-        const controls = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"], button, a[role="button"]'));
-        const isReviewControl = control => {
-            const label = `${control.getAttribute('aria-label') || ''} ${control.innerText || ''}`.toLowerCase();
-            return /ulasan|reviews?/.test(label) && !/tulis|write|bagikan|share|foto|photo|reply|balas|reviewer|reviewed/.test(label);
-        };
-        const reviewControls = controls.filter(isReviewControl);
-        const reviewTab = reviewControls.find(control => control.getAttribute('role') === 'tab');
-        const reviewButton = reviewTab || reviewControls.find(control => /\d/.test(`${control.getAttribute('aria-label') || ''} ${control.innerText || ''}`)) || reviewControls[0];
+        let reviewButton = null;
+        updateOverlay(0, 1000, 'Menunggu panel Reviews/Ulasan dimuat...');
+        for (let attempt = 0; attempt < 30; attempt++) {
+            const controls = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"], button, a[role="button"]'));
+            const isReviewControl = control => {
+                const label = `${control.getAttribute('aria-label') || ''} ${control.innerText || ''}`.toLowerCase();
+                return /(?:ulasan|reviews?)\b/.test(label) && !/tulis|write|bagikan|share|foto|photo|reply|balas|reviewer|reviewed/.test(label);
+            };
+            const reviewControls = controls.filter(isReviewControl);
+            const reviewTab = reviewControls.find(control => control.getAttribute('role') === 'tab');
+            reviewButton = reviewTab || reviewControls.find(control => /\d/.test(`${control.getAttribute('aria-label') || ''} ${control.innerText || ''}`)) || reviewControls[0];
+            if (reviewButton) break;
+            await delay(500);
+        }
+
         const initialCardCount = findCards().length;
         const initialContainer = findScrollContainer();
         const initialScrollHeight = initialContainer?.scrollHeight || 0;
 
         if (!reviewButton) {
-            throw new Error('Tombol Reviews/Ulasan tidak ditemukan. Pastikan halaman Google Search membuka panel review profil bisnis, bukan hanya preview.');
+            // Jika sudah ada kartu review terlihat di halaman (misal direct review list)
+            if (findCards().length > 0) return true;
+            throw new Error('Tombol Reviews/Ulasan tidak ditemukan. Pastikan halaman Google Maps/Search membuka profil bisnis dengan ulasan publik.');
         }
 
-        updateOverlay(0, 1000, 'Membuka daftar Reviews/Ulasan penuh...');
+        updateOverlay(0, 1000, 'Membuka tab Reviews/Ulasan...');
         if (reviewButton.getAttribute('aria-selected') !== 'true') reviewButton.click();
 
         for (let attempt = 0; attempt < 40; attempt++) {
@@ -410,7 +419,7 @@
             if (selectedTab || sortControl || currentCardCount > initialCardCount || expandedList) return true;
             await delay(500);
         }
-        throw new Error('Google tidak membuka daftar Reviews/Ulasan penuh. Pastikan panel review profil bisnis terbuka, lalu jalankan audit lagi.');
+        return true;
     }
 
     async function waitForNewReviews(reviews, timeout = 1400) {
@@ -428,7 +437,7 @@
         const reviewDialog = findReviewDrawer() || reviewCard?.closest('[role="dialog"], [aria-modal="true"]');
         const scope = reviewDialog || document;
         const getSortElements = () => Array.from(scope.querySelectorAll('button, [role], a[href], [tabindex], [jsaction], span, div'));
-        const getNewestOption = () => getSortElements().find(element => /^(newest|most recent|terbaru|paling baru)(?:\s+\d+)?$/i.test(labelOf(element)));
+        const getNewestOption = () => getSortElements().find(element => /^(?:newest|most recent|terbaru|paling baru|ulasan terbaru)(?:\s+\d+)?$/i.test(labelOf(element)));
         const getClickable = element => element?.closest('button, [role="button"], [role="radio"], [role="option"], [tabindex], a[href], [jsaction]') || element;
 
         let newestOption = getNewestOption();
@@ -441,35 +450,36 @@
                 if (newestOption.getAttribute('aria-checked') === 'true' || newestOption.getAttribute('aria-selected') === 'true') return true;
                 await delay(100);
             }
-            throw new Error('Newest terdeteksi tetapi Google tidak mengaktifkannya. Audit dihentikan sebelum scroll.');
+            return true;
         }
 
         const getSortControl = () => getSortElements()
-            .find(control => /^(sort by|sort reviews|urutkan|most relevant|paling relevan)$/i.test(labelOf(control)));
+            .find(control => /^(?:sort|sort by|sort reviews|urutkan|urutkan ulasan|most relevant|paling relevan)(?:\b|$)/i.test(labelOf(control)));
         let sortControl = getSortControl();
         for (let attempt = 0; !sortControl && attempt < 20; attempt++) {
             await delay(300);
             sortControl = getSortControl();
         }
         if (!sortControl) {
-            const labels = getSortElements().map(labelOf).filter(label => /sort|relevant|newest|recent|terbaru/i.test(label)).slice(0, 8);
-            throw new Error(`Kontrol Newest tidak ditemukan pada panel review. Elemen pengurutan terdeteksi: ${labels.join(' | ') || 'tidak ada'}.`);
+            console.warn('GriView: Kontrol pengurutan Newest tidak ditemukan, melanjutkan dengan urutan saat ini.');
+            return true;
         }
 
-        updateOverlay(0, 1000, 'Memilih Sort by: Newest...');
+        updateOverlay(0, 1000, 'Memilih Urutkan: Terbaru...');
         getClickable(sortControl).click();
 
-        for (let attempt = 0; attempt < 30; attempt++) {
+        for (let attempt = 0; attempt < 25; attempt++) {
             newestOption = getNewestOption();
             if (newestOption) {
                 getClickable(newestOption).click();
-                await delay(1200);
+                await delay(1000);
                 return true;
             }
             await delay(200);
         }
 
-        throw new Error('Opsi Newest/Terbaru tidak muncul setelah Sort by dibuka. Audit dihentikan sebelum menghitung review.');
+        console.warn('GriView: Pilihan Terbaru tidak muncul setelah klik tombol urutkan, melanjutkan dengan urutan default.');
+        return true;
     }
 
     async function startAudit(jobId, maxReviews, placeName) {
@@ -541,28 +551,66 @@
     chrome.runtime.sendMessage({ type: 'MAPS_AUDIT_READY' });
 
     // Auto-audit trigger KHUSUS untuk direct Google Maps URL (bukan Google Search)
-    const isGoogleMapsOnly = location.pathname.startsWith('/maps') || location.hostname.startsWith('maps.google');
-    if (isGoogleMapsOnly && !searchAuditMode && (location.href.includes('griview_auto_audit=1') || location.href.includes('griview_auto=1') || location.hash.includes('griview_auto_audit'))) {
-        let mapsAutoTriggered = false;
-        let checks = 0;
-        const mapsInterval = setInterval(() => {
-            checks++;
-            if (mapsAutoTriggered || checks > 25) {
-                clearInterval(mapsInterval);
-                return;
-            }
-            const titleEl = document.querySelector('h1.DUwDvf, [role="main"] h1');
-            const placeName = titleEl?.textContent?.trim() || document.title.replace(/\s*-\s*Google Maps.*$/i, '').trim();
-            if (placeName && placeName.length > 2 && !/google maps/i.test(placeName)) {
-                mapsAutoTriggered = true;
-                clearInterval(mapsInterval);
-                const addressEl = document.querySelector('[data-item-id="address"]');
-                const address = addressEl?.textContent?.trim() || '';
-                chrome.runtime.sendMessage({
-                    type: 'START_REVIEW_AUDIT',
-                    place: { placeName, address, mapsUrl: location.href }
-                });
-            }
-        }, 800);
+    const isGoogleMapsOnly = location.pathname.startsWith('/maps') || location.hostname.startsWith('maps.google') || location.hostname.includes('maps.google') || location.pathname.includes('/maps');
+    if (isGoogleMapsOnly && !searchAuditMode) {
+        (async function checkMapsAutoAuditTrigger() {
+            if (searchAuditMode || running) return;
+
+            // Cek URL params/hash
+            const hasUrlFlag = location.href.includes('griview_auto_audit=1') ||
+                               location.href.includes('griview_auto=1') ||
+                               location.hash.includes('griview_auto_audit');
+
+            // Cek armed audit di chrome.storage.local
+            let armed = null;
+            try {
+                const stored = await chrome.storage.local.get('griview_armed_audit');
+                if (stored.griview_armed_audit && (Date.now() - (stored.griview_armed_audit.timestamp || 0) < 120000)) {
+                    armed = stored.griview_armed_audit;
+                }
+            } catch (e) {}
+
+            if (!hasUrlFlag && !armed) return;
+
+            let mapsAutoTriggered = false;
+            let checks = 0;
+            const mapsInterval = setInterval(() => {
+                checks++;
+                if (mapsAutoTriggered || checks > 30) {
+                    clearInterval(mapsInterval);
+                    return;
+                }
+
+                const titleEl = document.querySelector('h1.DUwDvf, h1.fontHeadlineLarge, [role="main"] h1, div.fontHeadlineLarge, [data-attrid="title"]');
+                let placeName = titleEl?.textContent?.trim() || armed?.placeName || '';
+                if (!placeName || /google maps/i.test(placeName)) {
+                    placeName = document.title.replace(/\s*-\s*Google Maps.*$/i, '').trim();
+                }
+
+                if (placeName && placeName.length > 2 && !/^(google maps|maps)$/i.test(placeName)) {
+                    mapsAutoTriggered = true;
+                    clearInterval(mapsInterval);
+                    const addressEl = document.querySelector('[data-item-id="address"]');
+                    const address = addressEl?.textContent?.trim() || '';
+
+                    // Ekstrak CID jika ada di URL
+                    const cidMatch = location.href.match(/!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i) || location.href.match(/[?&]cid=(\d+)/i);
+                    const cid = cidMatch ? cidMatch[1] : (armed?.cid || '');
+                    const reviewHash = cid ? `#lrd=${cid},1,,,` : (armed?.reviewHash || '');
+
+                    chrome.runtime.sendMessage({
+                        type: 'START_REVIEW_AUDIT',
+                        place: {
+                            placeName,
+                            address,
+                            mapsUrl: location.href,
+                            cid,
+                            reviewHash,
+                            maxReviews: armed?.maxReviews || 1000
+                        }
+                    });
+                }
+            }, 600);
+        })();
     }
 })();

@@ -58,14 +58,14 @@ class JsonDatabase {
     public static function init(): void {
         require_once __DIR__ . '/SampleData.php';
 
-        // Init stores jika belum ada
+        // Init stores jika file belum ada sama sekali
         if (!file_exists(self::storesPath())) {
-            self::seedStores();
+            self::writeJson(self::storesPath(), []);
         }
 
         // Init reviews jika berkas belum ada
         if (!file_exists(self::reviewsPath())) {
-            self::seedReviews();
+            self::writeJson(self::reviewsPath(), []);
         }
 
         // Init settings jika belum ada
@@ -136,10 +136,11 @@ class JsonDatabase {
 
     public static function seedSettings(): void {
         $settings = [
-            'place_name'    => 'Winsee Optik',
-            'place_address' => '13 Cabang (Bandung, Cimahi & Jakarta Pusat)',
-            'place_id'      => DEFAULT_PLACE_ID,
-            'google_api_key'=> GOOGLE_MAPS_API_KEY,
+            'place_name'     => DEFAULT_PLACE_NAME,
+            'place_address'  => DEFAULT_PLACE_ADDRESS,
+            'place_id'       => DEFAULT_PLACE_ID,
+            'google_api_key' => GOOGLE_MAPS_API_KEY,
+            'business_group' => 'Semua Cabang',
         ];
         self::writeJson(self::settingsPath(), $settings);
     }

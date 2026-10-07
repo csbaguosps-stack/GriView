@@ -62,11 +62,82 @@ class StoreController {
     }
 
     public function delete(): void {
-        $id = (int)($_GET['id'] ?? 0);
+        $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
         if ($id > 0) {
             $this->storeModel->delete($id);
-            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Store berhasil dihapus dari sistem.'];
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Cabang store berhasil dihapus dari sistem.'];
         }
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        header('Location: ' . url('store', 'index'));
+        exit;
+    }
+
+    /**
+     * Hapus batch cabang store yang ditandai
+     */
+    public function deleteBatch(): void {
+        $ids = $_POST['store_ids'] ?? [];
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+        $ids = array_filter(array_map('intval', (array)$ids));
+
+        if (!empty($ids)) {
+            $deletedCount = $this->storeModel->deleteBatch($ids);
+            $_SESSION['flash'] = [
+                'type' => 'success',
+                'message' => "Sebanyak {$deletedCount} cabang store berhasil dihapus dari sistem."
+            ];
+        } else {
+            $_SESSION['flash'] = [
+                'type' => 'warning',
+                'message' => 'Tidak ada cabang store yang dipilih untuk dihapus.'
+            ];
+        }
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'count' => count($ids)]);
+            exit;
+        }
+
+        header('Location: ' . url('store', 'index'));
+        exit;
+    }
+
+    /**
+     * Hapus SEMUA cabang store sekaligus
+     */
+    public function deleteAll(): void {
+        $this->storeModel->deleteAll();
+        $_SESSION['flash'] = [
+            'type' => 'success',
+            'message' => 'Semua data cabang store berhasil dikosongkan.'
+        ];
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
+        header('Location: ' . url('store', 'index'));
+        exit;
+    }
+
+    /**
+     * Muat ulang data cabang contoh (demo)
+     */
+    public function seedSample(): void {
+        $count = $this->storeModel->seedSamples();
+        $_SESSION['flash'] = [
+            'type' => 'success',
+            'message' => "Berhasil memuat {$count} cabang contoh."
+        ];
         header('Location: ' . url('store', 'index'));
         exit;
     }

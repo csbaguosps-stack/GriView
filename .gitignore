@@ -3,21 +3,43 @@
 # License: by cs.baguosps@gmail.com
 # ==============================================================================
 
-# OS & Temp Files
+# --- Operating System & Temp Files ---
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
 *.tmp
 *.bak
+*.swp
+*~
 
-# IDE & Code Editors
+# --- IDE & Code Editors ---
 .idea/
 .vscode/
+*.sublime-project
+*.sublime-workspace
 
-# Logs
+# --- Logs & Debugging ---
 *.log
 error_log
 
-# Private Exports
+# --- Sensitive Credentials & Environment ---
+.env
+.env.*
+app/data/business_profile_token.json
+
+# --- Private Audit Exports & Temporary Job Caches ---
+# Mencegah file excel laporan audit nyata terunggah ke repositori publik
 app/data/exports/*
 !app/data/exports/.gitkeep
+app/data/latest_extension_job.json
+app/data/*.tmp
+
+# --- Uploaded Assets (Opsional: simpan aset kustom di luar git jika bersifat privat) ---
+# Jika ingin aset logo & thumbnail kustom tidak diunggah ke publik, uncomment baris berikut:
+# assets/uploads/*
+# !assets/uploads/.gitkeep

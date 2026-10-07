@@ -1,7 +1,8 @@
 <?php
 /* License: by cs.baguosps@gmail.com */
 require_once __DIR__ . '/../../models/Store.php';
-$winseeStores = (new Store())->getAll();
+$allStores = (new Store())->getAll();
+$winseeStores = $allStores; // Backward compatibility
 ?>
 <footer>
     <div class="container-fluid px-lg-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
@@ -11,7 +12,7 @@ $winseeStores = (new Store())->getAll();
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="badge bg-light text-secondary border">PHP <?= phpversion() ?></span>
             <span class="badge bg-light text-secondary border">Bootstrap 5.3</span>
-            <span class="badge bg-light text-secondary border"><?= count($winseeStores) ?> Store <?= htmlspecialchars(DEFAULT_PLACE_NAME) ?></span>
+            <span class="badge bg-light text-secondary border"><?= count($allStores) ?> Cabang Terdaftar</span>
             <a href="<?= url('extension', 'index') ?>" class="badge bg-dark text-white border border-secondary text-decoration-none">
                 <i class="bi bi-puzzle me-1 text-warning"></i> Extension Chrome
             </a>
@@ -65,7 +66,7 @@ $winseeStores = (new Store())->getAll();
 
                         <form id="formAutoAudit">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Pilih Cabang Winsee Optik Tujuan</label>
+                                <label class="form-label fw-bold">Pilih Cabang / Lokasi Bisnis Tujuan</label>
                                 <select name="store_id" class="form-select" id="selectScraperStore">
                                     <option value="" data-url="">Otomatis dari Nama Tempat Google Maps</option>
                                     <?php foreach ($winseeStores as $st): ?>
@@ -81,12 +82,13 @@ $winseeStores = (new Store())->getAll();
                                 <label class="form-label fw-bold">Link Google Maps atau Nama Tempat <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light"><i class="bi bi-link-45deg"></i></span>
-                                    <input type="text" name="gmaps_url" id="inputScraperUrl" class="form-control" placeholder="Contoh: https://maps.app.goo.gl/... atau Optik Winsee Braga" required>
+                                    <input type="text" name="gmaps_url" id="inputScraperUrl" class="form-control" placeholder="Contoh: https://maps.app.goo.gl/... atau Nama Tempat Bisnis" required>
                                     <button type="button" class="btn btn-outline-secondary" id="btnClearUrl" title="Hapus URL" style="display:none;">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
                                 <div class="form-text" id="urlHintText">Buka Google Maps, cari tempat/bisnis Anda, klik tombol <strong>Bagikan (Share)</strong> lalu salin linknya ke sini.</div>
+                                <div id="urlDetectionStatus" class="mt-2" style="display:none;"></div>
                             </div>
 
                             <div class="mb-3">
@@ -252,7 +254,7 @@ $winseeStores = (new Store())->getAll();
             <form action="<?= url('review', 'addManual') ?>" method="POST">
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Cabang Store Winsee Optik <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Pilih Cabang Bisnis <span class="text-danger">*</span></label>
                         <select name="store_id" class="form-select" required>
                             <?php foreach ($winseeStores as $st): ?>
                                 <option value="<?= $st['id'] ?>">
@@ -353,8 +355,6 @@ $winseeStores = (new Store())->getAll();
 
 <!-- Bootstrap 5.3 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- App JS -->
 <script src="<?= BASE_URL ?>/assets/js/app.js"></script>
 
@@ -594,19 +594,66 @@ $winseeStores = (new Store())->getAll();
         }
     };
 
+    // Cache data resolusi link Google Maps
+    window.__griviewResolvedMapsData = null;
+
+    function escapeHtml(text) {
+        return String(text || '').replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m]));
+    }
+
+    // Resolusi link Google Maps via endpoint AJAX PHP
+    async function resolveGoogleMapsUrl(inputVal) {
+        const raw = (inputVal || '').trim();
+        if (!raw) return null;
+
+        try {
+            const endpoint = '<?= url("extension", "resolveUrl") ?>&url=' + encodeURIComponent(raw);
+            const res = await fetch(endpoint, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (data && data.success) {
+                window.__griviewResolvedMapsData = data;
+                return data;
+            }
+        } catch (e) {
+            console.warn('Gagal meresolusi URL Google Maps:', e);
+        }
+        return null;
+    }
+
     // 6. Susun URL auto audit
-    function buildAutoAuditUrl(inputVal, storeName) {
+    function buildAutoAuditUrl(inputVal, storeName, resolvedData) {
         let raw = (inputVal || '').trim();
         if (!raw && storeName) raw = storeName.trim();
         if (!raw) return null;
+
+        const resolved = resolvedData || window.__griviewResolvedMapsData;
+
+        // Jika sudah teresolusi dan memiliki search_url dengan place_name / review_hash:
+        if (resolved) {
+            if (resolved.search_url) return resolved.search_url;
+            if (resolved.place_name) {
+                const hash = resolved.review_hash || (resolved.cid ? '#lrd=' + resolved.cid + ',1,,,' : '');
+                return 'https://www.google.com/search?q=' + encodeURIComponent(resolved.place_name) + '&hl=en-us&griview_auto_audit=1' + hash;
+            }
+            if (resolved.final_url) {
+                const sep = resolved.final_url.includes('?') ? '&' : '?';
+                return resolved.final_url + sep + 'griview_auto_audit=1#griview_auto_audit=1';
+            }
+        }
 
         if (/^https?:\/\//i.test(raw)) {
             try {
                 const parsed = new URL(raw);
                 parsed.searchParams.set('griview_auto_audit', '1');
+                parsed.hash = '#griview_auto_audit=1';
                 return parsed.toString();
             } catch (e) {
-                return raw + (raw.includes('?') ? '&' : '?') + 'griview_auto_audit=1';
+                return raw + (raw.includes('?') ? '&' : '?') + 'griview_auto_audit=1#griview_auto_audit=1';
             }
         }
         return 'https://www.google.com/search?q=' + encodeURIComponent(raw) + '&griview_auto_audit=1';
@@ -663,6 +710,7 @@ $winseeStores = (new Store())->getAll();
         setTimeout(() => { isLaunchingAutoAudit = false; }, 3000);
 
         const btnAuto = document.getElementById('btnLaunchAutoAudit');
+        const origBtnHtml = btnAuto ? btnAuto.innerHTML : '';
         if (btnAuto) {
             btnAuto.disabled = true;
             setTimeout(() => { if (btnAuto) btnAuto.disabled = false; }, 3000);
@@ -671,19 +719,49 @@ $winseeStores = (new Store())->getAll();
         const sel = document.getElementById('selectScraperStore');
         let urlVal = (inp ? inp.value : '').trim();
         const selectedStoreName = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : '';
+        const selectedStoreId = sel ? sel.value : '';
+        const scrapeLimit = document.getElementById('selectScrapeLimit')?.value || 1000;
 
         if (!urlVal && !selectedStoreName) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Pilih Cabang atau Isi Link',
-                text: 'Silakan pilih Cabang Toko Winsee atau masukkan Link Google Maps / nama tempat.',
+                text: 'Silakan pilih Cabang Toko atau masukkan Link Google Maps / nama tempat.',
                 confirmButtonColor: '#0d6efd'
             });
             return;
         }
 
-        const targetUrl = buildAutoAuditUrl(urlVal, selectedStoreName);
+        // Jika URL belum sempat di-resolve, jalankan resolusi cepat backend
+        let resolved = window.__griviewResolvedMapsData;
+        if (!resolved && /^https?:\/\//i.test(urlVal)) {
+            if (btnAuto) {
+                btnAuto.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5"></span>Menghubungkan Google Maps...';
+            }
+            resolved = await resolveGoogleMapsUrl(urlVal);
+            if (btnAuto) {
+                btnAuto.innerHTML = origBtnHtml;
+            }
+        }
+
+        const targetPlaceName = resolved?.place_name || (!/^https?:\/\//i.test(urlVal) ? urlVal : selectedStoreName);
+        const targetCid = resolved?.cid || '';
+        const targetReviewHash = resolved?.review_hash || (targetCid ? '#lrd=' + targetCid + ',1,,,' : '');
+        const targetUrl = buildAutoAuditUrl(urlVal, selectedStoreName, resolved);
         if (!targetUrl) return;
+
+        // Persenjatai ekstensi Chrome (ARM) via bridge postMessage
+        try {
+            window.postMessage({
+                type: 'GRIVIEW_ARM_AUDIT',
+                placeName: targetPlaceName,
+                cid: targetCid,
+                reviewHash: targetReviewHash,
+                url: targetUrl,
+                maxReviews: scrapeLimit,
+                storeId: selectedStoreId || (resolved?.matched_store?.id || '')
+            }, '*');
+        } catch (e) {}
 
         // Cek ekstensi Chrome
         const isInstalled = await window.checkGriViewExtensionInstalled(250);
@@ -728,6 +806,70 @@ $winseeStores = (new Store())->getAll();
                 }
             });
         }
+    }
+
+    // Live detector input URL Google Maps
+    const inputScraper = document.getElementById('inputScraperUrl');
+    const statusBox = document.getElementById('urlDetectionStatus');
+    const btnClear = document.getElementById('btnClearUrl');
+    const selStore = document.getElementById('selectScraperStore');
+
+    let resolveDebounceTimer = null;
+    function handleUrlInputChanged() {
+        const val = (inputScraper ? inputScraper.value : '').trim();
+        if (btnClear) btnClear.style.display = val ? 'block' : 'none';
+
+        if (!val) {
+            if (statusBox) statusBox.style.display = 'none';
+            window.__griviewResolvedMapsData = null;
+            return;
+        }
+
+        clearTimeout(resolveDebounceTimer);
+        const isUrl = /^https?:\/\//i.test(val);
+
+        if (isUrl && statusBox) {
+            statusBox.style.display = 'block';
+            statusBox.innerHTML = '<span class="badge bg-light text-secondary border py-1.5 px-2.5 rounded-pill"><span class="spinner-border spinner-border-sm me-1.5 text-primary"></span>Mendeteksi tempat dari link Google Maps...</span>';
+        }
+
+        resolveDebounceTimer = setTimeout(async () => {
+            if (!val) return;
+            const data = await resolveGoogleMapsUrl(val);
+            if (!statusBox) return;
+
+            if (data && data.place_name) {
+                let html = '<span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-pill shadow-xs"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Terdeteksi: <strong class="text-dark">' + escapeHtml(data.place_name) + '</strong></span>';
+                if (data.matched_store) {
+                    html += ' <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2 rounded-pill ms-1"><i class="bi bi-shop me-1"></i> Cabang: ' + escapeHtml(data.matched_store.store_name) + '</span>';
+                    if (selStore && data.matched_store.id) {
+                        selStore.value = String(data.matched_store.id);
+                    }
+                }
+                statusBox.innerHTML = html;
+                statusBox.style.display = 'block';
+            } else if (isUrl) {
+                statusBox.innerHTML = '<span class="badge bg-light text-muted border py-1.5 px-2.5 rounded-pill"><i class="bi bi-link-45deg me-1"></i> Link Google Maps siap dibuka</span>';
+                statusBox.style.display = 'block';
+            } else {
+                statusBox.style.display = 'none';
+            }
+        }, 400);
+    }
+
+    if (inputScraper) {
+        inputScraper.addEventListener('input', handleUrlInputChanged);
+        inputScraper.addEventListener('paste', () => setTimeout(handleUrlInputChanged, 50));
+    }
+
+    if (btnClear) {
+        btnClear.addEventListener('click', () => {
+            if (inputScraper) {
+                inputScraper.value = '';
+                inputScraper.focus();
+            }
+            handleUrlInputChanged();
+        });
     }
 
     // Pasang listener tombol Auto-Audit utama

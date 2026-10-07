@@ -72,14 +72,43 @@
         setTimeout(initBridge, 100);
     }
 
-    // Dengarkan pesan ping dari GriView Web (handshake via postMessage)
+    // Dengarkan pesan dari GriView Web (handshake via postMessage & arming audit)
     window.addEventListener('message', function (event) {
-        if (event.data && event.data.type === 'GRIVIEW_PING_EXTENSION') {
+        if (!event.data) return;
+
+        if (event.data.type === 'GRIVIEW_PING_EXTENSION') {
             markInstalled();
             window.postMessage({
                 type: 'GRIVIEW_PONG_EXTENSION',
                 installed: true,
-                version: '1.0.0'
+                version: '1.0.2'
+            }, '*');
+        } else if (event.data.type === 'GRIVIEW_ARM_AUDIT') {
+            const auditData = {
+                timestamp: Date.now(),
+                placeName: event.data.placeName || '',
+                cid: event.data.cid || '',
+                reviewHash: event.data.reviewHash || '',
+                targetUrl: event.data.url || event.data.targetUrl || '',
+                maxReviews: Number(event.data.maxReviews) || 1000,
+                storeId: event.data.storeId || ''
+            };
+
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({ griview_armed_audit: auditData });
+            }
+
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    type: 'ARM_PENDING_AUDIT',
+                    audit: auditData
+                }).catch(() => {});
+            }
+
+            window.postMessage({
+                type: 'GRIVIEW_ARM_AUDIT_ACK',
+                success: true,
+                placeName: auditData.placeName
             }, '*');
         }
     });

@@ -70,7 +70,7 @@ $queryFilters = $filters;
                         <i class="bi bi-patch-check-fill me-1"></i> Google Profil Bisnis Terverifikasi
                     </span>
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                        Grup: <strong>winseeoptik</strong>
+                        Grup: <strong><?= htmlspecialchars($placeConfig['business_group'] ?? 'Semua Cabang') ?></strong>
                     </span>
                     <?php if ($selectedStore): ?>
                         <span class="badge bg-light text-secondary border">

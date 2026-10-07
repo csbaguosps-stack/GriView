@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "GriView Review Audit",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Audit hingga 1.000 ulasan Google Maps dengan scroll otomatis.",
     "icons": {
         "16": "icons/icon-16.png",
@@ -21,11 +21,14 @@
         "storage"
     ],
     "host_permissions": [
-        "https://www.google.com/*",
-        "https://maps.google.com/*",
+        "*://*.google.com/*",
+        "*://*.google.co.id/*",
+        "*://maps.google.com/*",
+        "*://maps.google.co.id/*",
+        "*://maps.app.goo.gl/*",
+        "*://goo.gl/*",
         "http://localhost/*",
         "http://127.0.0.1/*",
-        "https://*.winseeoptik.com/*",
         "<all_urls>"
     ],
     "background": {
@@ -40,7 +43,9 @@
                 "*://*.google.com/*",
                 "*://google.com/*",
                 "*://*.google.co.id/*",
-                "*://google.co.id/*"
+                "*://google.co.id/*",
+                "*://*.goo.gl/*",
+                "*://goo.gl/*"
             ],
             "js": [
                 "griview-bridge.js"
@@ -49,8 +54,10 @@
         },
         {
             "matches": [
-                "https://www.google.com/search*",
-                "https://google.com/search*"
+                "*://www.google.com/search*",
+                "*://google.com/search*",
+                "*://www.google.co.id/search*",
+                "*://google.co.id/search*"
             ],
             "js": [
                 "search.js",
@@ -63,9 +70,14 @@
         },
         {
             "matches": [
-                "https://www.google.com/maps/*",
-                "https://google.com/maps/*",
-                "https://maps.google.com/*"
+                "*://www.google.com/maps*",
+                "*://google.com/maps*",
+                "*://maps.google.com/*",
+                "*://www.google.co.id/maps*",
+                "*://google.co.id/maps*",
+                "*://maps.google.co.id/*",
+                "*://maps.app.goo.gl/*",
+                "*://goo.gl/maps/*"
             ],
             "js": [
                 "maps-audit.js"

@@ -9,6 +9,7 @@
     "app_favicon": "assets/uploads/favicon.png",
     "app_thumbnail": "assets/uploads/thumbnail.png",
     "app_footer": "GriView - Google Business Review Audit & Analytics",
+    "business_group": "Semua Cabang",
     "ext_name": "GriView Review Audit",
     "ext_version": "1.0.1",
     "ext_description": "Audit hingga 1.000 ulasan Google Maps dengan scroll otomatis.",
