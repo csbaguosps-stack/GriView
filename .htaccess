@@ -1,0 +1,29 @@
+# License: by cs.baguosps@gmail.com
+# GriView - Apache / LiteSpeed Configuration
+DirectoryIndex index.php
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddDefaultCharset UTF-8
+</IfModule>
+
+# Keamanan: Cegah akses langsung ke berkas sensitif
+<FilesMatch "(^\.|\.json$|\.sqlite$|\.log$|\.bat$|\.sh$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Izinkan file manifest ekstensi jika diakses
+<Files "manifest.json">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+</Files>
