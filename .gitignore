@@ -1,0 +1,23 @@
+# ==============================================================================
+# GriView - .gitignore
+# License: by cs.baguosps@gmail.com
+# ==============================================================================
+
+# OS & Temp Files
+.DS_Store
+Thumbs.db
+[Dd]esktop.ini
+*.tmp
+*.bak
+
+# IDE & Code Editors
+.idea/
+.vscode/
+
+# Logs
+*.log
+error_log
+
+# Private Exports
+app/data/exports/*
+!app/data/exports/.gitkeep
