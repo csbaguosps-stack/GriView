@@ -6,8 +6,14 @@ $winseeStores = $allStores; // Backward compatibility
 ?>
 <footer>
     <div class="container-fluid px-lg-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
-        <div>
-            <strong><?= APP_NAME ?></strong> &copy; <?= date('Y') ?> &mdash; Google Business Review Audit & Analytics
+        <div class="text-secondary small d-flex align-items-center flex-wrap gap-2">
+            <span><strong><?= APP_NAME ?></strong> &copy; <?= date('Y') ?> &mdash; Google Business Review Audit & Analytics</span>
+            <span class="text-muted opacity-50 d-none d-md-inline">&bull;</span>
+            <span class="d-inline-flex align-items-center gap-1">
+                <i class="bi bi-envelope-at text-primary"></i>
+                <span class="text-muted">Support by:</span>
+                <a href="mailto:cs.baguosps@gmail.com" class="text-primary text-decoration-none fw-semibold">cs.baguosps@gmail.com</a>
+            </span>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="badge bg-light text-secondary border">PHP <?= phpversion() ?></span>
