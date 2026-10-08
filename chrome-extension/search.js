@@ -8,11 +8,13 @@
     let isAutoAudit = searchParams.get('griview_auto_audit') === '1' ||
                       searchParams.get('griview_auto') === '1' ||
                       location.hash.includes('griview_auto_audit');
+    let armedAuditData = null;
 
     // Cek juga armed audit dari GriView Web di storage
-    if (!isAutoAudit && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.get('griview_armed_audit').then(stored => {
             if (stored.griview_armed_audit && (Date.now() - (stored.griview_armed_audit.timestamp || 0) < 120000)) {
+                armedAuditData = stored.griview_armed_audit;
                 isAutoAudit = true;
                 showAutoNotification('Auto-Audit terdeteksi dari GriView Web, mendeteksi profil...');
                 let pCount = 0;
@@ -132,6 +134,10 @@
         showAutoNotification(`Profil terdeteksi: <strong>${place.placeName}</strong>. Membuka panel ulasan otomatis...`);
         console.log('GriView Auto-Audit: Menjalankan audit otomatis untuk', place.placeName);
 
+        const urlLimit = searchParams.get('griview_limit') || searchParams.get('limit') || searchParams.get('maxReviews');
+        const targetLimit = Math.min(1000, Math.max(1, Number(urlLimit) || Number(armedAuditData?.maxReviews) || 1000));
+        place.maxReviews = targetLimit;
+
         setTimeout(() => {
             chrome.runtime.sendMessage({ type: 'START_REVIEW_AUDIT', place });
         }, 400);
@@ -156,7 +162,7 @@
         button.type = 'button';
         button.className = 'griview-audit-launch';
         button.innerHTML = '<span class="griview-audit-symbol">✓</span><span>Review Audit</span>';
-        button.title = 'Audit hingga 1.000 review di tab baru';
+        button.title = 'Audit ulasan di tab baru';
 
         if (autoTriggered) {
             button.disabled = true;
@@ -166,6 +172,9 @@
         button.addEventListener('click', () => {
             button.disabled = true;
             button.querySelector('span:last-child').textContent = 'Membuka audit...';
+            const urlLimit = searchParams.get('griview_limit') || searchParams.get('limit') || searchParams.get('maxReviews');
+            const targetLimit = Math.min(1000, Math.max(1, Number(urlLimit) || Number(armedAuditData?.maxReviews) || 1000));
+            place.maxReviews = targetLimit;
             chrome.runtime.sendMessage({ type: 'START_REVIEW_AUDIT', place });
         });
         tools.append(button);

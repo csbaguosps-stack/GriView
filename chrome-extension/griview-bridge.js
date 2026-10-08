@@ -26,7 +26,7 @@
             // Tandai atribut DOM (aman dari CSP & terbaca langsung oleh skrip web)
             if (document.documentElement) {
                 document.documentElement.setAttribute('data-griview-extension', 'installed');
-                document.documentElement.setAttribute('data-griview-version', '1.0.0');
+                document.documentElement.setAttribute('data-griview-version', '1.0.5');
             }
 
             // Simpan status aktif di storage browser lokal
@@ -38,7 +38,7 @@
             // Kirim CustomEvent ke halaman web
             try {
                 window.dispatchEvent(new CustomEvent('GriViewExtensionReady', {
-                    detail: { version: '1.0.0', installed: true }
+                    detail: { version: '1.0.5', installed: true }
                 }));
             } catch (e) {}
 
@@ -81,7 +81,7 @@
             window.postMessage({
                 type: 'GRIVIEW_PONG_EXTENSION',
                 installed: true,
-                version: '1.0.2'
+                version: '1.0.5'
             }, '*');
         } else if (event.data.type === 'GRIVIEW_ARM_AUDIT') {
             const auditData = {
@@ -112,4 +112,66 @@
             }, '*');
         }
     });
+
+    // Dengarkan perubahan chrome.storage untuk pembaruan status audit ke halaman web GriView
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener(function (changes, area) {
+            if (area !== 'local') return;
+
+            // 1. Sinkronisasi sukses ke GriView backend
+            if (changes.griview_last_sync && changes.griview_last_sync.newValue) {
+                const sync = changes.griview_last_sync.newValue;
+                window.postMessage({
+                    type: 'GRIVIEW_AUDIT_COMPLETED',
+                    jobId: sync.jobId,
+                    placeName: sync.placeName,
+                    count: sync.count,
+                    downloadUrl: sync.downloadUrl,
+                    auditUrl: sync.auditUrl,
+                    status: 'complete',
+                    source: 'last_sync'
+                }, '*');
+            }
+
+            // 2. Perubahan progres atau status job audit
+            for (const key in changes) {
+                if (key.startsWith('audit:')) {
+                    const job = changes[key].newValue;
+                    if (!job) continue;
+                    if (job.status === 'complete' || job.status === 'stopped') {
+                        window.postMessage({
+                            type: 'GRIVIEW_AUDIT_COMPLETED',
+                            jobId: job.jobId,
+                            placeName: job.placeName,
+                            count: job.count || (job.reviews ? job.reviews.length : 0),
+                            maxReviews: job.maxReviews,
+                            status: job.status,
+                            message: job.message,
+                            source: 'storage_audit'
+                        }, '*');
+                    } else if (job.status === 'running' || job.status === 'starting') {
+                        window.postMessage({
+                            type: 'GRIVIEW_AUDIT_PROGRESS',
+                            jobId: job.jobId,
+                            placeName: job.placeName,
+                            count: job.count || (job.reviews ? job.reviews.length : 0),
+                            maxReviews: job.maxReviews,
+                            status: job.status,
+                            message: job.message
+                        }, '*');
+                    }
+                }
+            }
+        });
+    }
+
+    // Dengarkan pesan broadcast runtime dari background
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        chrome.runtime.onMessage.addListener(function (msg) {
+            if (!msg) return;
+            if (msg.type === 'GRIVIEW_AUDIT_COMPLETED' || msg.type === 'GRIVIEW_AUDIT_PROGRESS' || msg.type === 'GRIVIEW_AUDIT_SYNCED') {
+                window.postMessage(msg, '*');
+            }
+        });
+    }
 })();

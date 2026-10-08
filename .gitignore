@@ -37,6 +37,7 @@ app/data/business_profile_token.json
 app/data/exports/*
 !app/data/exports/.gitkeep
 app/data/latest_extension_job.json
+app/data/last_audit_export.json
 app/data/*.tmp
 
 # --- Uploaded Assets (Opsional: simpan aset kustom di luar git jika bersifat privat) ---

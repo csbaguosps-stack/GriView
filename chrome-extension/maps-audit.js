@@ -3,32 +3,151 @@
     if (window.__griviewMapsAuditReady) return;
     window.__griviewMapsAuditReady = true;
 
-    const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-    const searchAuditMode = location.pathname === '/search' && new URLSearchParams(location.search).get('phantomAuditComplete') === 'review';
     let running = false;
+    let stopRequested = false;
+    let currentReviewCount = 0;
+    let currentJobId = null;
     let overlay;
 
+    const delay = milliseconds => new Promise(resolve => {
+        if (stopRequested) return resolve();
+        const start = Date.now();
+        const interval = setInterval(() => {
+            if (stopRequested || Date.now() - start >= milliseconds) {
+                clearInterval(interval);
+                resolve();
+            }
+        }, 40);
+    });
+
+    const searchAuditMode = location.pathname === '/search' && new URLSearchParams(location.search).get('phantomAuditComplete') === 'review';
+
+    function requestStopAudit() {
+        if (stopRequested) return;
+        stopRequested = true;
+
+        const stopBtn = overlay?.querySelector('#griview-stop-btn');
+        if (stopBtn) {
+            stopBtn.disabled = true;
+            stopBtn.style.background = '#475569';
+            stopBtn.style.borderColor = '#64748b';
+            stopBtn.style.color = '#cbd5e1';
+            stopBtn.style.cursor = 'wait';
+            stopBtn.style.boxShadow = 'none';
+            stopBtn.style.transform = 'none';
+            const btnText = overlay?.querySelector('#griview-stop-btn-text');
+            if (btnText) {
+                btnText.textContent = currentReviewCount > 0
+                    ? `Menyimpan ${currentReviewCount.toLocaleString()} Review...`
+                    : 'Menghentikan proses...';
+            }
+        }
+
+        const badge = overlay?.querySelector('#griview-audit-badge');
+        if (badge) {
+            badge.textContent = 'Dihentikan';
+            badge.style.background = 'rgba(239, 68, 68, 0.25)';
+            badge.style.color = '#fca5a5';
+            badge.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+        }
+
+        const msgEl = overlay?.querySelector('.griview-audit-message');
+        if (msgEl) {
+            msgEl.textContent = currentReviewCount > 0
+                ? `Menghentikan... Memproses ${currentReviewCount.toLocaleString()} review yang sudah didapatkan.`
+                : 'Menghentikan audit...';
+        }
+    }
+
     function updateOverlay(count, max, message) {
+        currentReviewCount = count;
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.id = 'griview-audit-progress';
-            overlay.innerHTML = '<strong>GriView Review Audit</strong><span class="griview-audit-count"></span><div class="griview-audit-track"><i></i></div><small class="griview-audit-message"></small>';
+            overlay.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                    <strong style="font-size:13px;font-weight:700;color:#f8fafc;letter-spacing:0.2px;">GriView Review Audit</strong>
+                    <span id="griview-audit-badge" style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(99,102,241,0.22);color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);">Sedang Audit</span>
+                </div>
+                <span class="griview-audit-count"></span>
+                <div class="griview-audit-track"><i></i></div>
+                <small class="griview-audit-message"></small>
+                <div style="margin-top:10px;">
+                    <button type="button" id="griview-stop-btn" style="
+                        width:100%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        gap:6px;
+                        padding:7px 12px;
+                        background:#dc2626;
+                        color:#ffffff;
+                        border:1px solid #ef4444;
+                        border-radius:6px;
+                        font-family:system-ui,-apple-system,Arial,sans-serif;
+                        font-size:11.5px;
+                        font-weight:700;
+                        cursor:pointer;
+                        box-shadow:0 2px 8px rgba(220,38,38,0.35);
+                        transition:all 0.15s ease;
+                        letter-spacing:0.2px;
+                    ">
+                        <span style="font-size:10px;">⏹</span>
+                        <span id="griview-stop-btn-text">Stop & Ambil Data</span>
+                    </button>
+                </div>
+            `;
             Object.assign(overlay.style, {
                 position: 'fixed', top: '16px', right: '16px', zIndex: '2147483647',
-                width: '280px', padding: '14px', borderRadius: '7px',
+                width: '290px', padding: '14px', borderRadius: '8px',
                 background: '#202228', color: '#fff', font: '13px Arial, sans-serif',
-                boxShadow: '0 6px 24px rgba(0,0,0,.3)'
+                boxShadow: '0 8px 28px rgba(0,0,0,0.45)', border: '1px solid #374151'
             });
             const track = overlay.querySelector('.griview-audit-track');
             Object.assign(track.style, { height: '5px', margin: '9px 0', background: '#41434b', borderRadius: '4px', overflow: 'hidden' });
             Object.assign(track.firstElementChild.style, { display: 'block', height: '100%', width: '0', background: '#838cff', transition: 'width .2s ease' });
-            overlay.querySelector('.griview-audit-count').style.cssText = 'display:block;margin-top:8px;color:#d5d6dc';
-            overlay.querySelector('.griview-audit-message').style.cssText = 'display:block;color:#b8bac2;font-size:11px';
+            overlay.querySelector('.griview-audit-count').style.cssText = 'display:block;margin-top:8px;color:#d5d6dc;font-weight:600;font-size:12.5px;';
+            overlay.querySelector('.griview-audit-message').style.cssText = 'display:block;color:#b8bac2;font-size:11px;min-height:16px;line-height:1.35;';
+
+            const stopBtn = overlay.querySelector('#griview-stop-btn');
+            stopBtn.addEventListener('mouseenter', () => {
+                if (!stopRequested) {
+                    stopBtn.style.background = '#b91c1c';
+                    stopBtn.style.boxShadow = '0 3px 10px rgba(220,38,38,0.5)';
+                    stopBtn.style.transform = 'translateY(-1px)';
+                }
+            });
+            stopBtn.addEventListener('mouseleave', () => {
+                if (!stopRequested) {
+                    stopBtn.style.background = '#dc2626';
+                    stopBtn.style.boxShadow = '0 2px 8px rgba(220,38,38,0.35)';
+                    stopBtn.style.transform = 'translateY(0)';
+                }
+            });
+            stopBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                requestStopAudit();
+            });
+
             document.documentElement.append(overlay);
         }
+
         overlay.querySelector('.griview-audit-count').textContent = `${count.toLocaleString()} / ${max.toLocaleString()} review`;
         overlay.querySelector('.griview-audit-track i').style.width = `${Math.min(100, Math.round(count / max * 100))}%`;
         overlay.querySelector('.griview-audit-message').textContent = message;
+
+        const btnText = overlay.querySelector('#griview-stop-btn-text');
+        const stopBtn = overlay.querySelector('#griview-stop-btn');
+        if (btnText && stopBtn && !stopRequested) {
+            if (count > 0) {
+                btnText.textContent = `Stop & Ambil Data (${count.toLocaleString()})`;
+                stopBtn.title = `Hentikan proses sekarang dan simpan ${count.toLocaleString()} review yang sudah diambil`;
+            } else {
+                btnText.textContent = 'Stop & Selesai';
+                stopBtn.title = 'Hentikan proses audit';
+            }
+        }
     }
 
     function updateProcessedCount(count) {
@@ -319,7 +438,7 @@
     }
 
     async function openBestPlace(placeName) {
-        if (!location.pathname.includes('/maps/search')) return;
+        if (stopRequested || !location.pathname.includes('/maps/search')) return;
         const terms = (placeName || '').toLocaleLowerCase().match(/[a-z0-9]+/g) || [];
         const candidates = Array.from(document.querySelectorAll('div.Nv2PK a.hfpxzc, a[href*="/maps/place/"], a[href*="/place/"]'));
         if (!candidates.length) return;
@@ -347,26 +466,32 @@
     }
 
     async function openReviews() {
+        if (stopRequested) return false;
+
         if (searchAuditMode && location.hash.startsWith('#lrd=')) {
             updateOverlay(0, 1000, 'Membaca kartu review di panel Google Search...');
             for (let attempt = 0; attempt < 40; attempt++) {
+                if (stopRequested) return false;
                 if (findCards().length) {
                     updateOverlay(0, 1000, 'Daftar review ditemukan, menyiapkan pengurutan...');
                     return true;
                 }
                 await delay(500);
             }
+            if (stopRequested) return false;
             throw new Error('Panel review Google Search tidak memuat kartu review dari hash #lrd. Pastikan link review profil tersedia.');
         }
 
         if (searchAuditMode) {
             const reviewControl = findSearchReviewControl();
             if (!reviewControl) {
+                if (stopRequested) return false;
                 throw new Error('Panel bisnis Google Search tidak memiliki kontrol jumlah ulasan yang dapat dibuka. Coba buka profil bisnis lengkap lalu jalankan audit lagi.');
             }
             updateOverlay(0, 1000, 'Membuka panel jumlah ulasan...');
             reviewControl.click();
             for (let attempt = 0; attempt < 40; attempt++) {
+                if (stopRequested) return false;
                 if (location.hash.startsWith('#lrd=') && findCards().length) return true;
                 const cardCount = findCards().length;
                 const sortControlVisible = Array.from(document.querySelectorAll('button, [role="button"], [role="combobox"]'))
@@ -374,12 +499,14 @@
                 if (cardCount > 3 || sortControlVisible) return true;
                 await delay(500);
             }
+            if (stopRequested) return false;
             throw new Error('Kontrol jumlah ulasan sudah diklik, tetapi Google Search tidak membuka drawer review. Link #lrd/CID tidak tersedia pada profil ini.');
         }
 
         let reviewButton = null;
         updateOverlay(0, 1000, 'Menunggu panel Reviews/Ulasan dimuat...');
         for (let attempt = 0; attempt < 30; attempt++) {
+            if (stopRequested) return false;
             const controls = Array.from(document.querySelectorAll('button[role="tab"], [role="tab"], button, a[role="button"]'));
             const isReviewControl = control => {
                 const label = `${control.getAttribute('aria-label') || ''} ${control.innerText || ''}`.toLowerCase();
@@ -399,6 +526,7 @@
         if (!reviewButton) {
             // Jika sudah ada kartu review terlihat di halaman (misal direct review list)
             if (findCards().length > 0) return true;
+            if (stopRequested) return false;
             throw new Error('Tombol Reviews/Ulasan tidak ditemukan. Pastikan halaman Google Maps/Search membuka profil bisnis dengan ulasan publik.');
         }
 
@@ -406,6 +534,7 @@
         if (reviewButton.getAttribute('aria-selected') !== 'true') reviewButton.click();
 
         for (let attempt = 0; attempt < 40; attempt++) {
+            if (stopRequested) return false;
             const selectedTab = reviewButton.getAttribute('aria-selected') === 'true';
             const sortControl = Array.from(document.querySelectorAll('button')).some(button => {
                 const label = `${button.getAttribute('aria-label') || ''} ${button.innerText || ''}`.toLowerCase();
@@ -425,13 +554,15 @@
     async function waitForNewReviews(reviews, timeout = 1400) {
         const deadline = Date.now() + timeout;
         while (Date.now() < deadline) {
+            if (stopRequested) return false;
             if (extractReviews().some(review => !reviews.has(review.id))) return true;
-            await delay(500);
+            await delay(200);
         }
         return false;
     }
 
     async function sortReviewsNewest() {
+        if (stopRequested) return false;
         const labelOf = element => `${element.getAttribute('aria-label') || element.innerText || element.textContent || ''}`.replace(/\s+/g, ' ').trim().toLowerCase();
         const reviewCard = findCards()[0];
         const reviewDialog = findReviewDrawer() || reviewCard?.closest('[role="dialog"], [aria-modal="true"]');
@@ -447,6 +578,7 @@
             const target = getClickable(newestOption);
             target.click();
             for (let attempt = 0; attempt < 20; attempt++) {
+                if (stopRequested) return false;
                 if (newestOption.getAttribute('aria-checked') === 'true' || newestOption.getAttribute('aria-selected') === 'true') return true;
                 await delay(100);
             }
@@ -457,6 +589,7 @@
             .find(control => /^(?:sort|sort by|sort reviews|urutkan|urutkan ulasan|most relevant|paling relevan)(?:\b|$)/i.test(labelOf(control)));
         let sortControl = getSortControl();
         for (let attempt = 0; !sortControl && attempt < 20; attempt++) {
+            if (stopRequested) return false;
             await delay(300);
             sortControl = getSortControl();
         }
@@ -469,6 +602,7 @@
         getClickable(sortControl).click();
 
         for (let attempt = 0; attempt < 25; attempt++) {
+            if (stopRequested) return false;
             newestOption = getNewestOption();
             if (newestOption) {
                 getClickable(newestOption).click();
@@ -485,18 +619,30 @@
     async function startAudit(jobId, maxReviews, placeName) {
         if (running) return;
         running = true;
-        const max = Math.min(1000, Math.max(1, Number(maxReviews) || 1000));
+        stopRequested = false;
+        currentJobId = jobId;
+        currentReviewCount = 0;
+        const searchLimit = new URLSearchParams(location.search).get('maxReviews') || new URLSearchParams(location.search).get('griview_limit') || new URLSearchParams(location.search).get('limit');
+        const max = Math.min(1000, Math.max(1, Number(maxReviews) || Number(searchLimit) || 1000));
         const reviews = new Map();
         let bottomStale = 0;
 
         try {
             updateOverlay(0, max, 'Membuka daftar review...');
-            await openBestPlace(placeName);
-            if (!await openReviews()) throw new Error('Daftar review tidak ditemukan. Pastikan Google Maps menampilkan profil dengan review publik.');
-            await sortReviewsNewest();
+            if (!stopRequested) await openBestPlace(placeName);
+            if (!stopRequested) {
+                const reviewsOpened = await openReviews();
+                if (!reviewsOpened && !stopRequested) {
+                    throw new Error('Daftar review tidak ditemukan. Pastikan Google Maps menampilkan profil dengan review publik.');
+                }
+            }
+            if (!stopRequested) await sortReviewsNewest();
 
             for (let step = 0; step < 1800 && reviews.size < max && bottomStale < 3; step++) {
+                if (stopRequested) break;
                 if (expandReviewTexts()) await delay(250);
+                if (stopRequested) break;
+
                 const added = [];
                 for (const review of extractReviews()) {
                     if (!reviews.has(review.id) && reviews.size < max) {
@@ -504,6 +650,9 @@
                         added.push(review);
                     }
                 }
+                currentReviewCount = reviews.size;
+
+                if (stopRequested) break;
 
                 updateOverlay(reviews.size, max, 'Scroll otomatis dan membaca review...');
                 updateProcessedCount(reviews.size);
@@ -515,11 +664,12 @@
                     message: `Mengumpulkan ${reviews.size} dari ${max} review...`
                 });
 
-                if (reviews.size >= max) break;
+                if (reviews.size >= max || stopRequested) break;
                 const container = findScrollContainer();
                 if (!container) {
                     window.scrollTo(0, document.documentElement.scrollHeight);
                     const loadedMore = await waitForNewReviews(reviews);
+                    if (stopRequested) break;
                     bottomStale = loadedMore ? 0 : bottomStale + 1;
                 } else {
                     const stepSize = Math.max(900, Math.floor(container.clientHeight * 2.5));
@@ -527,6 +677,7 @@
                     container.dispatchEvent(new Event('scroll', { bubbles: true }));
                     container.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: stepSize }));
                     const loadedMore = await waitForNewReviews(reviews);
+                    if (stopRequested) break;
 
                     const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
                     const atBottom = maxScrollTop - container.scrollTop <= 32;
@@ -534,19 +685,53 @@
                 }
             }
 
-            const message = reviews.size >= max
-                ? `Batas ${max.toLocaleString()} review tercapai.`
-                : bottomStale >= 3
-                    ? `Daftar review habis. ${reviews.size.toLocaleString()} review berhasil dimuat.`
-                    : `Daftar selesai. ${reviews.size.toLocaleString()} review berhasil dimuat.`;
-            chrome.runtime.sendMessage({ type: 'REVIEW_AUDIT_PROGRESS', jobId, status: 'complete', message });
+            // Ekstraksi review terakhir yang terlihat di layar
+            for (const review of extractReviews()) {
+                if (!reviews.has(review.id) && reviews.size < max) {
+                    reviews.set(review.id, review);
+                }
+            }
+            currentReviewCount = reviews.size;
+
+            const message = stopRequested
+                ? `Audit dihentikan pengguna. ${reviews.size.toLocaleString()} review berhasil dimuat.`
+                : reviews.size >= max
+                    ? `Batas ${max.toLocaleString()} review tercapai.`
+                    : bottomStale >= 3
+                        ? `Daftar review habis. ${reviews.size.toLocaleString()} review berhasil dimuat.`
+                        : `Daftar selesai. ${reviews.size.toLocaleString()} review berhasil dimuat.`;
+
+            updateOverlay(reviews.size, max, message);
+            updateProcessedCount(reviews.size);
+
+            chrome.runtime.sendMessage({
+                type: 'REVIEW_AUDIT_PROGRESS',
+                jobId,
+                status: 'complete',
+                reviews: Array.from(reviews.values()),
+                message
+            });
         } catch (error) {
-            chrome.runtime.sendMessage({ type: 'REVIEW_AUDIT_PROGRESS', jobId, status: 'error', message: error.message });
+            if (stopRequested && reviews.size > 0) {
+                const message = `Audit dihentikan pengguna. ${reviews.size.toLocaleString()} review berhasil dimuat.`;
+                chrome.runtime.sendMessage({
+                    type: 'REVIEW_AUDIT_PROGRESS',
+                    jobId,
+                    status: 'complete',
+                    reviews: Array.from(reviews.values()),
+                    message
+                });
+            } else {
+                chrome.runtime.sendMessage({ type: 'REVIEW_AUDIT_PROGRESS', jobId, status: 'error', message: error.message });
+            }
+        } finally {
+            running = false;
         }
     }
 
     chrome.runtime.onMessage.addListener(message => {
         if (message.type === 'BEGIN_REVIEW_AUDIT') startAudit(message.jobId, message.maxReviews, message.placeName);
+        if (message.type === 'STOP_REVIEW_AUDIT') requestStopAudit();
     });
     chrome.runtime.sendMessage({ type: 'MAPS_AUDIT_READY' });
 
@@ -598,6 +783,10 @@
                     const cid = cidMatch ? cidMatch[1] : (armed?.cid || '');
                     const reviewHash = cid ? `#lrd=${cid},1,,,` : (armed?.reviewHash || '');
 
+                    const urlParams = new URLSearchParams(location.search);
+                    const urlLimit = urlParams.get('griview_limit') || urlParams.get('limit') || urlParams.get('maxReviews');
+                    const targetMax = Math.min(1000, Math.max(1, Number(urlLimit) || Number(armed?.maxReviews) || 1000));
+
                     chrome.runtime.sendMessage({
                         type: 'START_REVIEW_AUDIT',
                         place: {
@@ -606,7 +795,7 @@
                             mapsUrl: location.href,
                             cid,
                             reviewHash,
-                            maxReviews: armed?.maxReviews || 1000
+                            maxReviews: targetMax
                         }
                     });
                 }

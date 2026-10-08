@@ -48,8 +48,8 @@ class ExtensionController {
         $zipPath = __DIR__ . '/../../assets/griview-chrome-extension.zip';
         $extDir = __DIR__ . '/../../chrome-extension';
 
-        // Jika file zip belum ada atau lebih tua dari folder extension, re-generate
-        if (!file_exists($zipPath) && is_dir($extDir)) {
+        // Selalu re-generate zip agar sinkron dengan kode ekstensi terbaru
+        if (is_dir($extDir)) {
             $cmd = 'Compress-Archive -Path "' . $extDir . '\*" -DestinationPath "' . $zipPath . '" -Force';
             @exec("powershell -Command " . escapeshellarg($cmd));
         }

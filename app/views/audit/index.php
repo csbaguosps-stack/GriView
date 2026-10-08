@@ -637,26 +637,12 @@ $queryFilters = $filters;
 
                                 <!-- Aksi -->
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" 
-                                                class="btn <?= $hasReply ? 'btn-outline-primary' : 'btn-primary' ?> btn-reply-trigger"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalReplyReview"
-                                                data-id="<?= $rev['id'] ?>"
-                                                data-author="<?= htmlspecialchars($rev['author_name'] ?? '') ?>"
-                                                data-rating="<?= $rev['rating'] ?? 5 ?>"
-                                                data-text="<?= htmlspecialchars($rev['review_text'] ?? '') ?>"
-                                                data-reply="<?= htmlspecialchars($rev['owner_reply'] ?? '') ?>"
-                                                title="<?= $hasReply ? 'Edit Balasan' : 'Balas Ulasan' ?>">
-                                            <i class="bi <?= $hasReply ? 'bi-pencil-square' : 'bi-reply-fill' ?>"></i>
-                                        </button>
-                                        <a href="<?= url('review', 'delete', ['id' => $rev['id']]) ?>" 
-                                           class="btn btn-outline-danger" 
-                                           onclick="return confirm('Apakah Anda yakin ingin menghapus ulasan ini?');"
-                                           title="Hapus Ulasan">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                    </div>
+                                    <a href="<?= url('review', 'delete', ['id' => $rev['id']]) ?>" 
+                                       class="btn btn-sm btn-outline-danger shadow-xs px-2.5 py-1" 
+                                       onclick="return confirm('Apakah Anda yakin ingin menghapus ulasan ini dari sistem?');"
+                                       title="Hapus Ulasan">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

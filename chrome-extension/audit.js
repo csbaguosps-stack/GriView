@@ -147,17 +147,20 @@ function render() {
     const filtered = reviews.filter(review => `${review.author} ${review.text}`.toLocaleLowerCase().includes(query));
     const visible = filtered.slice(0, visibleLimit);
 
+    const max = Math.min(1000, Math.max(1, Number(currentJob.maxReviews) || 1000));
     document.getElementById('placeName').textContent = currentJob.placeName || 'Google Business Profile';
     document.getElementById('address').textContent = currentJob.address || '';
     document.getElementById('statusText').textContent = currentJob.status === 'complete'
         ? 'Audit selesai'
         : currentJob.status === 'error' ? 'Audit terhenti' : 'Mengumpulkan review';
     document.getElementById('totalCount').textContent = reviews.length.toLocaleString();
+    const metricLimitEl = document.querySelector('.metric-total small');
+    if (metricLimitEl) metricLimitEl.textContent = `Target ${max.toLocaleString()} review`;
     document.getElementById('priorityCount').textContent = priority.toLocaleString();
     document.getElementById('unansweredCount').textContent = unanswered.toLocaleString();
     document.getElementById('clearCount').textContent = clear.toLocaleString();
-    document.getElementById('progressText').textContent = `${reviews.length.toLocaleString()} / 1.000`;
-    document.getElementById('progressBar').style.width = `${Math.min(100, reviews.length / 10)}%`;
+    document.getElementById('progressText').textContent = `${reviews.length.toLocaleString()} / ${max.toLocaleString()}`;
+    document.getElementById('progressBar').style.width = `${Math.min(100, Math.round(reviews.length / max * 100))}%`;
     document.getElementById('resultNote').textContent = currentJob.message || `${reviews.length} review sedang diperiksa.`;
     document.getElementById('visibleCount').textContent = `Menampilkan ${visible.length} dari ${filtered.length} review`;
     document.getElementById('loadMore').hidden = visible.length >= filtered.length;
@@ -239,6 +242,31 @@ async function syncToGriView() {
             if (syncEl) {
                 syncEl.innerHTML = `<span>✓ Tersimpan otomatis ke GriView Web (${lastSyncedCount} ulasan)</span> <a href="${baseUrl}/index.php?c=review&a=audit" target="_blank" style="color:#fff;text-decoration:underline;margin-left:8px;">Buka Hasil Audit</a>`;
             }
+
+            // Simpan status sinkronisasi terakhir agar tab awal GriView langsung menerima sinyal selesai
+            try {
+                chrome.storage.local.set({
+                    griview_last_sync: {
+                        timestamp: Date.now(),
+                        jobId: currentJob.jobId || jobId,
+                        placeName: currentJob.placeName,
+                        count: lastSyncedCount,
+                        downloadUrl: `${baseUrl}/index.php?c=review&a=downloadAuditXls`,
+                        auditUrl: `${baseUrl}/index.php?c=review&a=audit`
+                    }
+                });
+            } catch (e) {}
+
+            try {
+                chrome.runtime.sendMessage({
+                    type: 'GRIVIEW_AUDIT_SYNCED',
+                    jobId: currentJob.jobId || jobId,
+                    placeName: currentJob.placeName,
+                    count: lastSyncedCount,
+                    downloadUrl: `${baseUrl}/index.php?c=review&a=downloadAuditXls`,
+                    auditUrl: `${baseUrl}/index.php?c=review&a=audit`
+                }).catch(() => {});
+            } catch (e) {}
         } else {
             if (syncEl) {
                 syncEl.innerHTML = `<span style="color:#f87171;">⚠️ Gagal tersimpan ke server (${baseUrl}) - HTTP ${res.status}</span>`;

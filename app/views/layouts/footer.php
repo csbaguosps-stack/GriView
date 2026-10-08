@@ -316,42 +316,6 @@ $winseeStores = $allStores; // Backward compatibility
     </div>
 </div>
 
-<!-- MODAL BALAS REVIEW (OWNER REPLY) -->
-<div class="modal fade" id="modalReplyReview" tabindex="-1" aria-labelledby="modalReplyReviewLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="modalReplyReviewLabel">
-                    <i class="bi bi-reply-fill text-primary me-2"></i>Tanggapi Ulasan Google Maps
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="<?= url('review', 'reply') ?>" method="POST">
-                <input type="hidden" name="review_id" id="replyReviewId" value="">
-                <div class="modal-body p-4">
-                    <div class="p-3 bg-light rounded mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong id="replyReviewAuthor" class="text-dark">Nama Reviewer</strong>
-                            <span id="replyReviewRating" class="text-warning fw-bold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                        <p id="replyReviewText" class="text-muted small mb-0 font-italic">"Isi ulasan pengunjung..."</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Teks Balasan Anda (Sebagai Pemilik Bisnis)</label>
-                        <textarea name="reply_text" id="replyTextInput" rows="4" class="form-control" placeholder="Halo Kak, terima kasih banyak atas ulasannya..." required></textarea>
-                        <div class="form-text">Tanggapan ramah dan solutif meningkatkan reputasi bisnis Anda di Google Maps.</div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-send-check me-1"></i> Simpan Balasan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- Bootstrap 5.3 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -626,23 +590,41 @@ $winseeStores = $allStores; // Backward compatibility
     }
 
     // 6. Susun URL auto audit
-    function buildAutoAuditUrl(inputVal, storeName, resolvedData) {
+    function buildAutoAuditUrl(inputVal, storeName, resolvedData, limit = 1000) {
         let raw = (inputVal || '').trim();
         if (!raw && storeName) raw = storeName.trim();
         if (!raw) return null;
 
+        const limitVal = Math.min(1000, Math.max(1, Number(limit) || 1000));
         const resolved = resolvedData || window.__griviewResolvedMapsData;
 
         // Jika sudah teresolusi dan memiliki search_url dengan place_name / review_hash:
         if (resolved) {
-            if (resolved.search_url) return resolved.search_url;
+            if (resolved.search_url) {
+                try {
+                    const u = new URL(resolved.search_url);
+                    u.searchParams.set('griview_auto_audit', '1');
+                    u.searchParams.set('griview_limit', String(limitVal));
+                    return u.toString();
+                } catch (e) {
+                    const sep = resolved.search_url.includes('?') ? '&' : '?';
+                    return resolved.search_url + sep + 'griview_auto_audit=1&griview_limit=' + limitVal;
+                }
+            }
             if (resolved.place_name) {
                 const hash = resolved.review_hash || (resolved.cid ? '#lrd=' + resolved.cid + ',1,,,' : '');
-                return 'https://www.google.com/search?q=' + encodeURIComponent(resolved.place_name) + '&hl=en-us&griview_auto_audit=1' + hash;
+                return 'https://www.google.com/search?q=' + encodeURIComponent(resolved.place_name) + '&hl=en-us&griview_auto_audit=1&griview_limit=' + limitVal + hash;
             }
             if (resolved.final_url) {
-                const sep = resolved.final_url.includes('?') ? '&' : '?';
-                return resolved.final_url + sep + 'griview_auto_audit=1#griview_auto_audit=1';
+                try {
+                    const u = new URL(resolved.final_url);
+                    u.searchParams.set('griview_auto_audit', '1');
+                    u.searchParams.set('griview_limit', String(limitVal));
+                    return u.toString();
+                } catch (e) {
+                    const sep = resolved.final_url.includes('?') ? '&' : '?';
+                    return resolved.final_url + sep + 'griview_auto_audit=1&griview_limit=' + limitVal + '#griview_auto_audit=1';
+                }
             }
         }
 
@@ -650,23 +632,151 @@ $winseeStores = $allStores; // Backward compatibility
             try {
                 const parsed = new URL(raw);
                 parsed.searchParams.set('griview_auto_audit', '1');
+                parsed.searchParams.set('griview_limit', String(limitVal));
                 parsed.hash = '#griview_auto_audit=1';
                 return parsed.toString();
             } catch (e) {
-                return raw + (raw.includes('?') ? '&' : '?') + 'griview_auto_audit=1#griview_auto_audit=1';
+                return raw + (raw.includes('?') ? '&' : '?') + 'griview_auto_audit=1&griview_limit=' + limitVal + '#griview_auto_audit=1';
             }
         }
-        return 'https://www.google.com/search?q=' + encodeURIComponent(raw) + '&griview_auto_audit=1';
+        return 'https://www.google.com/search?q=' + encodeURIComponent(raw) + '&griview_auto_audit=1&griview_limit=' + limitVal;
     }
 
+    // Tracking & Pembaruan Tampilan Tab Awal saat Auto-Audit Berjalan & Selesai
+    window.__griviewActiveAudit = null;
+    window.__griviewAuditCompletedShown = false;
+    window.__griviewPollTimer = null;
+
+    function updateAuditProgress(info) {
+        if (!info || window.__griviewAuditCompletedShown) return;
+        const currentCount = Number(info.count || 0);
+        const maxReviews = Number(info.maxReviews || window.__griviewActiveAudit?.maxReviews || 1000);
+        const percent = Math.min(100, Math.max(5, Math.round((currentCount / Math.max(1, maxReviews)) * 100)));
+
+        if (window.__griviewActiveAudit) {
+            window.__griviewActiveAudit.lastCount = currentCount;
+            if (info.placeName) window.__griviewActiveAudit.placeName = info.placeName;
+        }
+
+        const barEl = document.getElementById('swalAuditProgressBar');
+        if (barEl) {
+            barEl.style.width = percent + '%';
+            barEl.setAttribute('aria-valuenow', percent);
+        }
+        const countBadge = document.getElementById('swalAuditCountBadge');
+        if (countBadge) {
+            countBadge.textContent = `${currentCount.toLocaleString()} / ${maxReviews.toLocaleString()}`;
+        }
+        const percentText = document.getElementById('swalAuditPercentText');
+        if (percentText) {
+            percentText.textContent = `${percent}%`;
+        }
+        const statusText = document.getElementById('swalAuditStatusText');
+        if (statusText && info.message) {
+            statusText.textContent = info.message;
+        }
+    }
+
+    function handleAuditFinished(info) {
+        if (window.__griviewAuditCompletedShown) return;
+        window.__griviewAuditCompletedShown = true;
+
+        if (window.__griviewPollTimer) {
+            clearInterval(window.__griviewPollTimer);
+            window.__griviewPollTimer = null;
+        }
+
+        const placeName = info?.placeName || info?.place_name || window.__griviewActiveAudit?.placeName || 'Google Maps';
+        const count = Number(info?.count ?? info?.saved_count ?? window.__griviewActiveAudit?.lastCount ?? 0);
+        const auditUrl = info?.auditUrl || info?.audit_url || '<?= url("review", "audit") ?>';
+        const downloadUrl = info?.downloadUrl || info?.download_url || '<?= url("review", "downloadAuditXls") ?>';
+
+        // Ganti tampilan di tab awal dengan notifikasi sukses & ringkasan hasil
+        Swal.fire({
+            icon: 'success',
+            title: 'Auto-Audit Selesai! 🎉',
+            html: `
+                <div class="text-start">
+                    <div class="alert alert-success border-success-subtle d-flex align-items-center gap-3 p-3 mb-3 rounded-3 shadow-xs">
+                        <i class="bi bi-check-circle-fill fs-3 text-success flex-shrink-0"></i>
+                        <div>
+                            <strong class="text-success d-block fs-6">Audit Berhasil Diselesaikan!</strong>
+                            <span class="small text-secondary">Data ulasan telah otomatis tersimpan ke database GriView dan laporan XLS siap diunduh.</span>
+                        </div>
+                    </div>
+
+                    <div class="card border rounded-3 p-3 mb-3 bg-light-subtle shadow-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <span class="text-secondary small">Nama Tempat:</span>
+                            <strong class="text-dark">${escapeHtml(placeName)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <span class="text-secondary small">Total Ulasan Diambil:</span>
+                            <span class="badge bg-primary fs-6 px-3 py-1.5 shadow-xs">${count > 0 ? count.toLocaleString() + ' Ulasan' : 'Selesai'}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-secondary small">Status Sinkronisasi:</span>
+                            <span class="badge bg-success text-white px-2.5 py-1">
+                                <i class="bi bi-check-all me-1"></i> Tersinkron ke GriView
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 rounded-3 bg-light border small text-muted mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle-fill text-primary fs-5 flex-shrink-0"></i>
+                        <span>Pilih <strong>Buka Halaman Audit</strong> untuk melihat analisis lengkap, atau <strong>Download XLS</strong> untuk membuka di Excel.</span>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: '<i class="bi bi-shield-check me-1"></i> Buka Halaman Audit',
+            confirmButtonColor: '#0d6efd',
+            denyButtonText: '<i class="bi bi-file-earmark-excel-fill me-1"></i> Download File XLS',
+            denyButtonColor: '#198754',
+            cancelButtonText: 'Selesai & Muat Ulang',
+            cancelButtonColor: '#6c757d',
+            allowOutsideClick: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = auditUrl;
+            } else if (result.isDenied) {
+                window.location.href = downloadUrl;
+            } else {
+                window.location.reload();
+            }
+        });
+    }
+
+    // Dengarkan sinyal progres & selesai dari Chrome Extension bridge
+    window.addEventListener('message', function (e) {
+        if (!e.data || typeof e.data !== 'object') return;
+        if (e.data.type === 'GRIVIEW_AUDIT_PROGRESS') {
+            updateAuditProgress(e.data);
+        } else if (e.data.type === 'GRIVIEW_AUDIT_COMPLETED' || e.data.type === 'GRIVIEW_AUDIT_SYNCED') {
+            handleAuditFinished(e.data);
+        }
+    });
+
     // 7. Buka 1 tab baru dan jalankan auto-audit
-    function launchAutoAuditTab(targetUrl) {
+    function launchAutoAuditTab(targetUrl, auditMeta) {
         // Tutup modal sync
         const syncModalEl = document.getElementById('modalSyncGoogle');
         if (syncModalEl) {
             const bsSync = bootstrap.Modal.getInstance(syncModalEl);
             if (bsSync) bsSync.hide();
         }
+
+        const targetLimit = Number(auditMeta?.maxReviews || 1000);
+        const placeName = auditMeta?.placeName || 'Google Maps';
+
+        window.__griviewActiveAudit = {
+            startTime: Date.now(),
+            placeName: placeName,
+            maxReviews: targetLimit,
+            lastCount: 0
+        };
+        window.__griviewAuditCompletedShown = false;
 
         // Buka TEPAT 1 TAB BARU saja (reuse jika sudah ada tab audit terbuka)
         if (window.__griviewTargetAuditWindow && !window.__griviewTargetAuditWindow.closed) {
@@ -676,30 +786,72 @@ $winseeStores = $allStores; // Backward compatibility
             window.__griviewTargetAuditWindow = window.open(targetUrl, '_blank');
         }
 
-        // Tampilkan feedback modern ke user
+        // Tampilkan feedback modern ke user di tab awal dengan status dinamis
         Swal.fire({
-            icon: 'success',
+            icon: 'info',
             title: 'Membuka Tab & Menjalankan Auto-Audit! 🚀',
             html: `
                 <div class="text-start">
                     <p class="mb-2">Tab Google Maps/Search telah dibuka di tab baru dan <strong>Review Audit sedang berjalan otomatis</strong> via Chrome Extension.</p>
-                    <div class="alert alert-light border py-2.5 px-3 small text-muted mb-2">
-                        <i class="bi bi-magic text-primary me-1"></i>
-                        Ekstensi akan otomatis melakukan scroll ulasan, membaca komentar panjang ('more'), menghitung jumlah kata, dan menyimpan ulasan langsung ke GriView.
+
+                    <!-- Live Progress Box di Tab Awal -->
+                    <div id="swalAuditLiveProgressBox" class="p-3 rounded-3 bg-light border mb-2.5">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <span class="small fw-semibold text-secondary d-flex align-items-center gap-2">
+                                <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+                                <span id="swalAuditStatusText">Sedang mengumpulkan ulasan di tab baru...</span>
+                            </span>
+                            <span id="swalAuditCountBadge" class="badge bg-primary px-2.5 py-1">0 / ${targetLimit.toLocaleString()}</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div id="swalAuditProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 10%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1.5 small text-muted">
+                            <span>Target: <strong class="text-dark">${targetLimit.toLocaleString()} Ulasan</strong></span>
+                            <span id="swalAuditPercentText">0%</span>
+                        </div>
                     </div>
-                    <p class="small text-muted mb-0">Setelah selesai, data akan langsung tersimpan dan muncul di halaman <strong>Ulasan</strong> dan <strong>Audit</strong>.</p>
+
+                    <div class="alert alert-light border py-2 px-3 small text-muted mb-2">
+                        <i class="bi bi-magic text-primary me-1"></i>
+                        Tampilan modal ini akan <strong>otomatis berubah</strong> begitu proses audit selesai atau dihentikan.
+                    </div>
+                    <p class="small text-muted mb-0">Setelah selesai, data otomatis tersimpan dan muncul di halaman <strong>Ulasan</strong> dan <strong>Audit</strong>.</p>
                 </div>
             `,
             showCancelButton: true,
             confirmButtonText: '<i class="bi bi-shield-check me-1"></i> Buka Halaman Audit',
             confirmButtonColor: '#0d6efd',
-            cancelButtonText: 'Tetap di Sini',
-            cancelButtonColor: '#6c757d'
+            cancelButtonText: 'Tetap di Sini (Biarkan Berjalan)',
+            cancelButtonColor: '#6c757d',
+            allowOutsideClick: false
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.href = '<?= url("review", "audit") ?>';
             }
         });
+
+        // Polling fallback: Periksa status sync ke backend setiap 1.5 detik
+        if (window.__griviewPollTimer) clearInterval(window.__griviewPollTimer);
+        const startTime = Date.now();
+        window.__griviewPollTimer = setInterval(async () => {
+            if (window.__griviewAuditCompletedShown) {
+                clearInterval(window.__griviewPollTimer);
+                return;
+            }
+            try {
+                const res = await fetch('<?= BASE_URL ?>/index.php?c=review&a=checkSyncStatus');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.has_export) {
+                        const exportTime = (data.saved_timestamp ? data.saved_timestamp * 1000 : 0);
+                        if (exportTime >= startTime - 3000) {
+                            handleAuditFinished(data);
+                        }
+                    }
+                }
+            } catch (err) {}
+        }, 1500);
     }
 
     // 8. Eksekusi Auto-Audit: Buka Tab Baru & Jalankan Audit (Debounced: 1 Tab Saja)
@@ -720,7 +872,7 @@ $winseeStores = $allStores; // Backward compatibility
         let urlVal = (inp ? inp.value : '').trim();
         const selectedStoreName = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : '';
         const selectedStoreId = sel ? sel.value : '';
-        const scrapeLimit = document.getElementById('selectScrapeLimit')?.value || 1000;
+        const scrapeLimit = Number(document.getElementById('selectScrapeLimit')?.value) || 1000;
 
         if (!urlVal && !selectedStoreName) {
             Swal.fire({
@@ -747,8 +899,14 @@ $winseeStores = $allStores; // Backward compatibility
         const targetPlaceName = resolved?.place_name || (!/^https?:\/\//i.test(urlVal) ? urlVal : selectedStoreName);
         const targetCid = resolved?.cid || '';
         const targetReviewHash = resolved?.review_hash || (targetCid ? '#lrd=' + targetCid + ',1,,,' : '');
-        const targetUrl = buildAutoAuditUrl(urlVal, selectedStoreName, resolved);
+        const targetUrl = buildAutoAuditUrl(urlVal, selectedStoreName, resolved, scrapeLimit);
         if (!targetUrl) return;
+
+        const auditMeta = {
+            placeName: targetPlaceName,
+            maxReviews: scrapeLimit,
+            storeId: selectedStoreId || (resolved?.matched_store?.id || '')
+        };
 
         // Persenjatai ekstensi Chrome (ARM) via bridge postMessage
         try {
@@ -759,7 +917,7 @@ $winseeStores = $allStores; // Backward compatibility
                 reviewHash: targetReviewHash,
                 url: targetUrl,
                 maxReviews: scrapeLimit,
-                storeId: selectedStoreId || (resolved?.matched_store?.id || '')
+                storeId: auditMeta.storeId
             }, '*');
         } catch (e) {}
 
@@ -768,7 +926,7 @@ $winseeStores = $allStores; // Backward compatibility
 
         if (isInstalled) {
             // Sudah terpasang, langsung buka!
-            launchAutoAuditTab(targetUrl);
+            launchAutoAuditTab(targetUrl, auditMeta);
         } else {
             // Belum terdeteksi: berikan opsi ramah agar tidak memblokir user yang sudah pasang
             Swal.fire({
@@ -800,7 +958,7 @@ $winseeStores = $allStores; // Backward compatibility
             }).then((res) => {
                 if (res.isConfirmed) {
                     window.confirmExtensionInstalled();
-                    launchAutoAuditTab(targetUrl);
+                    launchAutoAuditTab(targetUrl, auditMeta);
                 } else if (res.isDenied) {
                     window.showExtensionRequiredModal();
                 }

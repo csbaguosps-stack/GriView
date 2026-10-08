@@ -169,6 +169,25 @@ Aplikasi GriView sudah dirancang dengan konsep **Zero Configuration / Plug-and-P
 
 ---
 
+## 📝 Catatan Rilis & Pembaruan (Changelog)
+
+### 🚀 Versi 1.0.5
+- **🎯 Dynamic Scrape Limit & Tombol Stop Fleksibel:**
+  - Penambahan tombol melayang **⏹ Stop & Ambil Data ({count})** pada halaman scraping Google Maps & Search, memungkinkan pengguna menghentikan scraping kapan saja dan langsung memproses ulasan yang telah terkumpul.
+  - Perbaikan bug batasan ulasan sehingga opsi filter (50, 100, 200, 500, 1.000) bekerja secara presisi tanpa tembus ke 1.000 review.
+- **🔄 Pembaruan Tampilan Real-Time di Tab Awal (GriView Web):**
+  - Tab awal GriView kini menampilkan status langsung (*live progress bar*, hitungan ulasan, dan pesan progres).
+  - Tampilan modal di tab awal **otomatis berubah** menjadi notifikasi sukses (`Auto-Audit Selesai! 🎉`) dengan ringkasan jumlah ulasan dan status database saat proses selesai.
+  - Tersedia 3 tombol aksi instan: **[Buka Halaman Audit]**, **[Download File XLS]**, dan **[Selesai & Muat Ulang]**.
+  - Endpoint `checkSyncStatus` dan komunikasi *cross-tab* via `griview-bridge.js` memastikan status selalu tersinkronisasi 100%.
+- **🧹 Penyederhanaan Kolom Aksi & Pembersihan Fitur Balas Ulasan:**
+  - Menghapus tombol dan modal tanggapi/balas review manual yang sebelumnya hanya tersimpan lokal dan tidak dapat otomatis terbit ke Google Maps.
+  - Kolom aksi tabel audit difokuskan secara bersih untuk manajemen hapus ulasan.
+- **📦 Pembaruan Paket Chrome Extension:**
+  - Sinkronisasi versi ekstensi ke **v1.0.5** pada `manifest.json`, `griview-bridge.js`, dan arsip `assets/griview-chrome-extension.zip`.
+
+---
+
 ## 📜 Lisensi & Hak Cipta
 
 ```text

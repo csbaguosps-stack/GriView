@@ -7,7 +7,7 @@ function makeJobId() {
     return `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function searchAuditUrl(place, sourceUrl, jobId) {
+function searchAuditUrl(place, sourceUrl, jobId, maxReviews) {
     let url = new URL('https://www.google.com/search');
     if (place.reviewUrl) {
         try {
@@ -25,6 +25,10 @@ function searchAuditUrl(place, sourceUrl, jobId) {
     url.searchParams.set('phantomAuditComplete', 'review');
     url.searchParams.set('auditId', jobId);
     url.searchParams.set('processed', '0');
+    if (maxReviews) {
+        url.searchParams.set('maxReviews', String(maxReviews));
+        url.searchParams.set('griview_limit', String(maxReviews));
+    }
 
     const sourceHash = sourceUrl ? new URL(sourceUrl).hash : '';
     let reviewUrlHash = '';
@@ -38,7 +42,18 @@ function searchAuditUrl(place, sourceUrl, jobId) {
 
 async function startAudit(sourceTab, place) {
     const jobId = makeJobId();
-    const url = searchAuditUrl(place, sourceTab?.url, jobId);
+    let maxLimit = Math.min(1000, Math.max(1, Number(place?.maxReviews) || 0));
+    if (!maxLimit) {
+        try {
+            const stored = await chrome.storage.local.get('griview_armed_audit');
+            if (stored.griview_armed_audit?.maxReviews) {
+                maxLimit = Math.min(1000, Math.max(1, Number(stored.griview_armed_audit.maxReviews)));
+            }
+        } catch (e) {}
+    }
+    if (!maxLimit) maxLimit = MAX_REVIEWS;
+
+    const url = searchAuditUrl(place, sourceTab?.url, jobId, maxLimit);
 
     // 1 TAB SAJA: Gunakan tab yang sudah dibuka (sourceTab), JANGAN buat tab baru!
     let tabId;
@@ -67,9 +82,9 @@ async function startAudit(sourceTab, place) {
             reviewHash: place.reviewHash || '',
             status: 'starting',
             count: 0,
-            maxReviews: MAX_REVIEWS,
+            maxReviews: maxLimit,
             reviews: [],
-            message: 'Membuka panel review Google Search...'
+            message: `Membuka panel review Google Search (${maxLimit.toLocaleString()} ulasan)...`
         }
     });
 }
@@ -82,26 +97,48 @@ async function getJobForTab(tabId) {
     return result[`audit:${jobId}`] || null;
 }
 
-async function saveProgress(job, message) {
+async function saveProgress(job, message, senderTabId) {
     const stored = await chrome.storage.local.get(`audit:${job.jobId}`);
     const current = stored[`audit:${job.jobId}`] || job;
+    const maxLimit = Math.min(1000, Math.max(1, Number(current.maxReviews) || Number(job.maxReviews) || MAX_REVIEWS));
     const reviews = new Map((current.reviews || []).map(review => [review.id, review]));
     for (const review of message.reviews || []) {
-        if (review.id) reviews.set(review.id, review);
+        if (review.id && reviews.size < maxLimit) reviews.set(review.id, review);
     }
 
     const updated = {
         ...current,
         status: message.status || current.status,
         count: reviews.size,
-        reviews: Array.from(reviews.values()).slice(0, MAX_REVIEWS),
+        maxReviews: maxLimit,
+        reviews: Array.from(reviews.values()).slice(0, maxLimit),
         message: message.message || current.message,
         updatedAt: Date.now()
     };
     await chrome.storage.local.set({ [`audit:${job.jobId}`]: updated });
 
+    // Siarkan pembaruan status ke tab-tab aktif (agar tab awal GriView langsung menerima sinyal)
+    try {
+        const isFinished = updated.status === 'complete' || updated.status === 'stopped';
+        chrome.tabs.query({}, (tabs) => {
+            for (const t of tabs || []) {
+                if (t.id && t.id !== senderTabId) {
+                    chrome.tabs.sendMessage(t.id, {
+                        type: isFinished ? 'GRIVIEW_AUDIT_COMPLETED' : 'GRIVIEW_AUDIT_PROGRESS',
+                        jobId: job.jobId,
+                        placeName: updated.placeName,
+                        count: updated.count,
+                        maxReviews: maxLimit,
+                        status: updated.status,
+                        message: updated.message
+                    }).catch(() => {});
+                }
+            }
+        });
+    } catch (e) {}
+
     if (message.status === 'complete' || message.status === 'error') {
-        const tabId = updated.tabId;
+        const tabId = updated.tabId || job.tabId || senderTabId;
         if (tabId) {
             await chrome.tabs.update(tabId, {
                 url: chrome.runtime.getURL(`audit.html?job=${encodeURIComponent(job.jobId)}`),
@@ -112,6 +149,20 @@ async function saveProgress(job, message) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender) => {
+    if (message.type === 'GRIVIEW_AUDIT_SYNCED') {
+        try {
+            chrome.tabs.query({}, (tabs) => {
+                for (const t of tabs || []) {
+                    chrome.tabs.sendMessage(t.id, {
+                        type: 'GRIVIEW_AUDIT_COMPLETED',
+                        ...message
+                    }).catch(() => {});
+                }
+            });
+        } catch (e) {}
+        return;
+    }
+
     if (message.type === 'ARM_PENDING_AUDIT') {
         const audit = message.audit;
         if (audit) {
@@ -192,7 +243,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     }
 
     if (message.type === 'REVIEW_AUDIT_PROGRESS' && sender.tab?.id) {
-        getJobForTab(sender.tab.id).then(job => job && saveProgress(job, message));
+        getJobForTab(sender.tab.id).then(job => job && saveProgress(job, message, sender.tab.id));
+        return;
+    }
+
+    if (message.type === 'STOP_REVIEW_AUDIT' && sender.tab?.id) {
+        chrome.tabs.sendMessage(sender.tab.id, { type: 'STOP_REVIEW_AUDIT' }).catch(() => {});
         return;
     }
 

@@ -393,6 +393,43 @@ class ReviewController {
     }
 
     /**
+     * Endpoint JSON: Cek status sinkronisasi audit terbaru (untuk auto-update tab awal)
+     */
+    public function checkSyncStatus(): void {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, OPTIONS');
+        header('Content-Type: application/json; charset=utf-8');
+
+        $metaFile = dirname(__DIR__) . '/data/last_audit_export.json';
+        if (file_exists($metaFile)) {
+            $meta = json_decode(file_get_contents($metaFile), true);
+            if ($meta) {
+                $savedTime = isset($meta['saved_at']) ? strtotime($meta['saved_at']) : 0;
+                echo json_encode([
+                    'status' => 'success',
+                    'has_export' => true,
+                    'job_id' => $meta['job_id'] ?? '',
+                    'place_name' => $meta['place_name'] ?? DEFAULT_PLACE_NAME,
+                    'saved_count' => (int)($meta['saved_count'] ?? $meta['review_count'] ?? 0),
+                    'saved_at' => $meta['saved_at'] ?? '',
+                    'saved_timestamp' => $savedTime,
+                    'download_url' => BASE_URL . '/index.php?c=review&a=downloadAuditXls',
+                    'audit_url' => BASE_URL . '/index.php?c=review&a=audit',
+                    'server_time' => time()
+                ]);
+                exit;
+            }
+        }
+
+        echo json_encode([
+            'status' => 'empty',
+            'has_export' => false,
+            'server_time' => time()
+        ]);
+        exit;
+    }
+
+    /**
      * Export ulasan ke format XLS (Excel) yang rapi
      */
     public function exportXls(): void {

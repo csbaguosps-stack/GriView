@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "GriView Review Audit",
-    "version": "1.0.2",
-    "description": "Audit hingga 1.000 ulasan Google Maps dengan scroll otomatis.",
+    "version": "1.0.5",
+    "description": "Audit ulasan Google Maps dengan live progress di tab awal, filter limit dinamis, dan tombol stop fleksibel.",
     "icons": {
         "16": "icons/icon-16.png",
         "48": "icons/icon-48.png",
