@@ -1,0 +1,151 @@
+<!-- License: by cs.baguosps@gmail.com -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GriView Review Audit</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- HEADER -->
+        <header class="popup-header">
+            <div class="header-brand">
+                <img src="icons/icon-48.png" alt="GriView Logo" class="brand-logo" id="brandLogo">
+                <div class="brand-info">
+                    <div class="brand-title-wrap">
+                        <h1 class="brand-title">GriView</h1>
+                        <span class="badge-status" id="badgeStatus" title="Ekstensi aktif dan siap digunakan">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Aktif</span>
+                        </span>
+                    </div>
+                    <p class="brand-subtitle">Google Maps Review Audit</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn-action-icon" id="btnReloadExt" title="Muat ulang ekstensi (Reload)">
+                    <span class="action-icon">🔄</span>
+                </button>
+                <a href="#" class="btn-action-icon hidden" id="btnOpenWeb" title="Buka Dashboard GriView Web" target="_blank">
+                    <span class="action-icon">↗</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- NOTIFICATION / TOAST BANNER -->
+        <div id="toastBanner" class="toast-banner hidden">
+            <span class="toast-icon" id="toastIcon">ℹ️</span>
+            <span class="toast-message" id="toastMessage">Pesan</span>
+        </div>
+
+        <!-- DETECTED CURRENT TAB CARD -->
+        <div id="detectedTabCard" class="detected-tab-card hidden">
+            <div class="detected-icon">📍</div>
+            <div class="detected-content">
+                <div class="detected-label">Tab Saat Ini Terdeteksi</div>
+                <div class="detected-title" id="detectedTabTitle">-</div>
+            </div>
+            <button type="button" class="btn-use-detected" id="btnUseDetected" title="Gunakan link/tempat dari tab aktif">Pakai</button>
+        </div>
+
+        <!-- MAIN FORM -->
+        <form id="auditForm" class="audit-form" autocomplete="off">
+            <!-- INPUT 1: LINK ATAU NAMA TEMPAT -->
+            <div class="form-group">
+                <div class="label-wrap">
+                    <label for="inputQuery" class="form-label">
+                        Link Google Maps atau Nama Tempat <span class="required">*</span>
+                    </label>
+                </div>
+                <div class="input-control-wrap">
+                    <span class="input-prefix-icon">🔗</span>
+                    <input 
+                        type="text" 
+                        id="inputQuery" 
+                        class="form-input" 
+                        placeholder="Contoh: https://maps.app.goo.gl/... atau Kopi Kenangan" 
+                        autofocus
+                    >
+                    <button type="button" class="btn-clear-input hidden" id="btnClearInput" title="Hapus teks">✕</button>
+                </div>
+                <div class="input-hint">
+                    Bisa berupa tautan Maps (Share link) atau langsung nama tempat / bisnis.
+                </div>
+            </div>
+
+            <!-- INPUT 2: JUMLAH ULASAN -->
+            <div class="form-group">
+                <div class="label-wrap">
+                    <label for="selectLimit" class="form-label">
+                        Jumlah Ulasan yang Diambil
+                    </label>
+                    <span class="limit-badge" id="limitBadge">1.000 Ulasan</span>
+                </div>
+                <div class="select-control-wrap">
+                    <span class="input-prefix-icon">📊</span>
+                    <select id="selectLimit" class="form-select">
+                        <option value="50">50 Ulasan Terbaru</option>
+                        <option value="100">100 Ulasan Terbaru</option>
+                        <option value="200">200 Ulasan Terbaru</option>
+                        <option value="500">500 Ulasan Terbaru</option>
+                        <option value="1000" selected>Maksimal 1.000 Ulasan</option>
+                    </select>
+                </div>
+                
+                <!-- PRESET CHIPS -->
+                <div class="preset-chips">
+                    <button type="button" class="chip-btn" data-value="50">50</button>
+                    <button type="button" class="chip-btn" data-value="100">100</button>
+                    <button type="button" class="chip-btn" data-value="200">200</button>
+                    <button type="button" class="chip-btn" data-value="500">500</button>
+                    <button type="button" class="chip-btn active" data-value="1000">1.000</button>
+                </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <button type="submit" class="btn-primary" id="btnStartAudit">
+                <span class="btn-icon">🚀</span>
+                <span class="btn-text" id="btnStartText">Mulai Audit</span>
+            </button>
+        </form>
+
+        <!-- ACTIVE AUDIT PROGRESS CARD -->
+        <div id="activeAuditCard" class="active-audit-card hidden">
+            <div class="active-audit-header">
+                <span class="active-pulse-badge">
+                    <span class="pulse-dot"></span>
+                    <span id="activeStatusLabel">Sedang Audit</span>
+                </span>
+                <span class="active-count-text" id="activeCountText">0 / 1.000</span>
+            </div>
+            <div class="active-place-name" id="activePlaceName">-</div>
+            <div class="active-progress-bar-wrap">
+                <div class="active-progress-bar" id="activeProgressBar"></div>
+            </div>
+            <div class="active-audit-actions">
+                <button type="button" class="btn-mini btn-mini-primary" id="btnOpenAuditTab">Buka Tab Audit</button>
+                <button type="button" class="btn-mini btn-mini-danger" id="btnStopAudit">Stop</button>
+            </div>
+        </div>
+
+        <!-- RELOAD EXTENSION SECTION -->
+        <div class="utility-section">
+            <button type="button" class="btn-secondary-reload" id="btnReloadFull" title="Muat ulang ekstensi tanpa membuka halaman chrome://extensions">
+                <span class="reload-icon">🔄</span>
+                <span id="btnReloadFullText">Reload Ekstensi</span>
+            </button>
+        </div>
+
+        <!-- FOOTER WITH COPYRIGHT -->
+        <footer class="popup-footer">
+            <div class="copyright-text">
+                Copyright by <a href="mailto:cs.baguosps@gmail.com" class="copyright-email">cs.baguosps@gmail.com</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

@@ -626,6 +626,7 @@ class SettingsController {
         $manifest['version'] = $version;
         if (isset($manifest['action'])) {
             $manifest['action']['default_title'] = $name;
+            $manifest['action']['default_popup'] = 'popup.html';
         }
         file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }

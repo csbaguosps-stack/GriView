@@ -28,7 +28,7 @@ define('GOOGLE_MAPS_API_KEY', getenv('GOOGLE_MAPS_API_KEY') ?: ''); // Ambil dar
 // Konfigurasi Aplikasi
 define('APP_NAME', 'GriView');
 define('APP_SUBTITLE', 'Google Business Review Audit & Analytics');
-define('APP_VERSION', '1.0.5');
+define('APP_VERSION', '1.0.6');
 define('ROOT_DIR', dirname(__DIR__, 2)); // c:/xampp/htdocs/griview
 
 // Deteksi Base URL secara otomatis (Mendukung localhost, subdomain seperti grivew.winseeoptik.com, HTTPS, Cloudflare, & Reverse Proxy)

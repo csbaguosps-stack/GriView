@@ -171,6 +171,22 @@ Aplikasi GriView sudah dirancang dengan konsep **Zero Configuration / Plug-and-P
 
 ## 📝 Catatan Rilis & Pembaruan (Changelog)
 
+### 🚀 Versi 1.0.6
+- **🖱️ Menu Form Popup Interaktif di Toolbar Chrome:**
+  - Menjadikan ikon ekstensi Chrome di toolbar dapat diklik langsung untuk memunculkan popup menu form modern.
+  - Form audit interaktif: input tautan Google Maps (share link/URL) atau nama bisnis, pilihan limit ulasan dinamis (50, 100, 200, 500, 1.000) dengan preset chips instan, dan tombol **Mulai Audit**.
+  - Fitur deteksi otomatis tab aktif: mendeteksi jika pengguna sedang membuka tab Google Maps / Google Search dan menyediakan tombol "Pakai" untuk mengisi form otomatis.
+- **🎨 Tema Cerah Modern (White & Blue Theme):**
+  - Desain popup modern dengan palet warna dominan putih bersih (`#ffffff`) dan biru royal (`#2563eb`), font crisp, dan bayangan elegan.
+- **🔄 Tombol Reload Ekstensi Cepat:**
+  - Menambahkan tombol **Reload Ekstensi** (`chrome.runtime.reload()`) langsung di dalam popup sehingga pengguna tidak perlu lagi membuka `chrome://extensions` secara manual.
+- **🛡️ Mode Ekstensi Mandiri (100% Standalone tanpa XAMPP):**
+  - Ekstensi kini dapat digunakan sepenuhnya mandiri oleh customer tanpa memerlukan instalasi XAMPP/PHP.
+  - Laporan audit dan ekspor file spreadsheet Excel (.XLS) berjalan 100% di browser via JavaScript Blob.
+  - Penambahan identitas hak cipta resmi: `Copyright by cs.baguosps@gmail.com`.
+- **📦 Pembaruan Paket Chrome Extension:**
+  - Sinkronisasi versi ekstensi ke **v1.0.6** pada `manifest.json`, `griview-bridge.js`, `config.php`, `settings.json`, dan arsip `assets/griview-chrome-extension.zip`.
+
 ### 🚀 Versi 1.0.5
 - **🎯 Dynamic Scrape Limit & Tombol Stop Fleksibel:**
   - Penambahan tombol melayang **⏹ Stop & Ambil Data ({count})** pada halaman scraping Google Maps & Search, memungkinkan pengguna menghentikan scraping kapan saja dan langsung memproses ulasan yang telah terkumpul.

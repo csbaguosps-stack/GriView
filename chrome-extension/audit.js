@@ -193,7 +193,7 @@ async function getGriViewBaseUrl() {
             return stored.griview_base_url.trim().replace(/\/+$/, '');
         }
     } catch (e) {}
-    return 'http://localhost/griview';
+    return null;
 }
 
 let isSyncingToGriView = false;
@@ -205,6 +205,14 @@ async function syncToGriView() {
 
     const baseUrl = await getGriViewBaseUrl();
     const syncEl = document.getElementById('syncStatus');
+
+    if (!baseUrl) {
+        if (syncEl) {
+            syncEl.innerHTML = '<span style="color:#a6ec63;">✓ Mode Ekstensi Mandiri — Siap Export XLS</span>';
+        }
+        return;
+    }
+
     if (syncEl) {
         syncEl.innerHTML = '<span style="color:#fcd34d;">⏳ Menyimpan otomatis ke GriView Web...</span>';
     }
@@ -274,7 +282,7 @@ async function syncToGriView() {
         }
     } catch (e) {
         if (syncEl) {
-            syncEl.innerHTML = `<span style="color:#94a3b8;">ℹ️ Server GriView (${baseUrl}) offline atau belum dibuka</span>`;
+            syncEl.innerHTML = `<span style="color:#94a3b8;">✓ Mode Mandiri (Standalone) — Siap Export XLS</span>`;
         }
     } finally {
         isSyncingToGriView = false;
@@ -285,9 +293,23 @@ async function loadJob() {
     if (!jobId) return;
     const baseUrl = await getGriViewBaseUrl();
     const brandEl = document.querySelector('.brand');
-    if (brandEl) brandEl.href = `${baseUrl}/index.php?c=review&a=audit`;
+    if (brandEl) {
+        if (baseUrl) {
+            brandEl.href = `${baseUrl}/index.php?c=review&a=audit`;
+        } else {
+            brandEl.removeAttribute('href');
+            brandEl.style.cursor = 'default';
+        }
+    }
     const openBtn = document.getElementById('openInGriView');
-    if (openBtn) openBtn.href = `${baseUrl}/index.php?c=review&a=audit`;
+    if (openBtn) {
+        if (baseUrl) {
+            openBtn.href = `${baseUrl}/index.php?c=review&a=audit`;
+            openBtn.style.display = 'inline-flex';
+        } else {
+            openBtn.style.display = 'none';
+        }
+    }
 
     const stored = await chrome.storage.local.get(`audit:${jobId}`);
     currentJob = stored[`audit:${jobId}`] || null;

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "GriView Review Audit",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "Audit ulasan Google Maps dengan live progress di tab awal, filter limit dinamis, dan tombol stop fleksibel.",
     "icons": {
         "16": "icons/icon-16.png",
@@ -14,7 +14,8 @@
             "48": "icons/icon-48.png",
             "128": "icons/icon-128.png"
         },
-        "default_title": "GriView Review Audit"
+        "default_title": "GriView Review Audit",
+        "default_popup": "popup.html"
     },
     "permissions": [
         "tabs",

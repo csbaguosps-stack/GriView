@@ -26,7 +26,7 @@
             // Tandai atribut DOM (aman dari CSP & terbaca langsung oleh skrip web)
             if (document.documentElement) {
                 document.documentElement.setAttribute('data-griview-extension', 'installed');
-                document.documentElement.setAttribute('data-griview-version', '1.0.5');
+                document.documentElement.setAttribute('data-griview-version', '1.0.6');
             }
 
             // Simpan status aktif di storage browser lokal
@@ -38,7 +38,7 @@
             // Kirim CustomEvent ke halaman web
             try {
                 window.dispatchEvent(new CustomEvent('GriViewExtensionReady', {
-                    detail: { version: '1.0.5', installed: true }
+                    detail: { version: '1.0.6', installed: true }
                 }));
             } catch (e) {}
 
@@ -81,7 +81,7 @@
             window.postMessage({
                 type: 'GRIVIEW_PONG_EXTENSION',
                 installed: true,
-                version: '1.0.5'
+                version: '1.0.6'
             }, '*');
         } else if (event.data.type === 'GRIVIEW_ARM_AUDIT') {
             const auditData = {
