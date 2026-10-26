@@ -6,6 +6,10 @@
 [![Chrome Extension](https://img.shields.io/badge/Extension-Manifest%20V3-4285F4?style=flat&logo=google-chrome&logoColor=white)](chrome-extension/)
 [![Architecture](https://img.shields.io/badge/Architecture-MVC%20%2B%20JSON%20Database-green.svg)](app/)
 
+<p align="center">
+  <img src="assets/preview.png" alt="GriView Scraper - Google Maps Intelligence Dashboard" width="100%">
+</p>
+
 **GriView** adalah platform audit dan analitik ulasan Google Maps berbasis web yang dilengkapi dengan **Google Chrome Extension (Manifest V3)** resmi. Dirancang untuk membantu bisnis, konsultan, dan pemilik brand dalam mengaudit, menyaring, menganalisis reputasi, serta mengekspor ulasan Google Maps ke format **Microsoft Excel (.XLS) eksekutif yang rapi dan terformat**.
 
 Dibangun dengan arsitektur **MVC (Model-View-Controller)** murni, database portabel **JSON Flat-File (Zero Configuration)**, antarmuka responsif **Bootstrap 5.3**, visualisasi **Chart.js**, dan sistem **Auto-Kompresi Aset Gambar**.
