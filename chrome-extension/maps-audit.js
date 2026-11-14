@@ -303,89 +303,143 @@
 
     function isAuthorOrActionElement(el) {
         if (!el || typeof el.closest !== 'function') return true;
-        // Elemen di dalam kontainer header profil atau link kontributor Google Maps
+
+        // 1. Elemen di dalam kontainer header profil atau link kontributor Google Maps
         if (el.closest('.al6KDe, .d4r55, .WNxzHc, [data-href*="/maps/contrib/"], a[href*="/maps/contrib/"], a[href*="contrib.google"]')) {
             return true;
         }
-        // Class yang biasa digunakan pada avatar atau tombol profil reviewer (.WEBjve, .NBa7we, .qkRLte)
+
+        // 2. Class avatar atau tombol profil reviewer
         const cls = String(el.className || '');
-        if (cls.includes('WEBjve') || cls.includes('NBa7we') || cls.includes('qkRLte') || /avatar|profile|kontributor|reviewer/i.test(cls)) {
+        if (cls.includes('WEBjve') || cls.includes('NBa7we') || cls.includes('qkRLte') || /avatar|profile|kontributor|reviewer\b/i.test(cls)) {
             return true;
         }
-        // Aria-label atau title profil reviewer atau tombol aksi ulasan
+
+        // 3. Tombol aksi ulasan (Suka, Bagikan, Menu Tindakan, Balas, Opsi)
+        if (cls.includes('PP3Y3d') || cls.includes('S1qRNe') || cls.includes('gllhef')) {
+            return true;
+        }
+        const jsact = (el.getAttribute('jsaction') || '').toLowerCase();
+        if (/reviewerlink|reviewer\b|actionmenu|togglethumbsup|share|reply/i.test(jsact)) {
+            return true;
+        }
+
+        // 4. Aria-label / Title: kecualikan foto profil / tindakan, TETAPI jangan kecualikan foto ulasan!
         const aria = (el.getAttribute('aria-label') || el.getAttribute('title') || '').toLowerCase();
-        if (/foto profil|profile photo|photo of|foto kontributor|kontributor/i.test(aria)) {
+        if (/foto profil|profile photo|photo of/i.test(aria) && !/di ulasan|in review|review/i.test(aria)) {
+            return true;
+        }
+        // Jika aria-label hanya berupa nama orang "Foto [Author Name]"
+        if (/^foto\s+[^0-9]+$/i.test(aria) && !/ulasan|review/i.test(aria)) {
             return true;
         }
         if (/^(?:suka|like|helpful|membantu|bagikan|share|tindakan|actions|opsi|options|laporkan|report|balas|reply|terjemahkan|translate)/i.test(aria)) {
             return true;
         }
-        // URL foto profil Google Account (/a/ atau /a-/)
+
+        // 5. URL foto profil Google Account (/a/ atau /a-/)
         const bg = el.style?.backgroundImage || '';
         const src = el.getAttribute('src') || '';
         if (/googleusercontent\.com\/a[\-\/]/i.test(bg) || /googleusercontent\.com\/a[\-\/]/i.test(src)) {
             return true;
         }
+
         return false;
     }
 
     function getReviewPhotoCount(card, author) {
         if (!card) return 0;
 
-        // 1. Ekstraksi total foto dari aria-label jika Google Maps menyediakannya
-        // Contoh ID: "Foto 1 dari 3", "Foto 2 dari 5", "Foto 1/4"
-        // Contoh EN: "Photo 1 of 3", "Photo 2 of 5", "Photo 1/4"
-        let maxAriaTotal = 0;
-        const labeledElements = Array.from(card.querySelectorAll('button[aria-label], [role="button"][aria-label], [aria-label]'))
+        // Method 1: Deteksi langsung thumbnail foto ulasan (Google Maps desktop & Google Search drawer)
+        // Mendukung: button.Tya61d, jsaction*="openPhoto", container .KtCyie, .KtRffc, .review-photos, data-photo-index
+        const directPhotoCandidates = Array.from(card.querySelectorAll([
+            'button.Tya61d',
+            '[role="button"].Tya61d',
+            'button[jsaction*="openPhoto"]',
+            '[role="button"][jsaction*="openPhoto"]',
+            '[jsaction*="openPhoto"]',
+            '.KtCyie button',
+            '.KtCyie [role="button"]',
+            '.KtRffc button',
+            '.KtRffc [role="button"]',
+            '[data-photo-index]',
+            '.gws-localreviews__review-photos img',
+            '.gws-localreviews__review-photos [role="button"]',
+            '.gws-localreviews__review-photos div[style*="background-image"]',
+            '.review-photos img',
+            '.review-photos [role="button"]',
+            '.review-photos div[style*="background-image"]',
+            'div[data-attrid*="photo"] img'
+        ].join(', '))).filter(el => !isAuthorOrActionElement(el));
+
+        const uniqueThumbs = Array.from(new Set(directPhotoCandidates));
+
+        if (uniqueThumbs.length > 0) {
+            let extraPhotos = 0;
+            for (const el of uniqueThumbs) {
+                const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+                const text = (el.innerText || el.textContent || '').trim();
+                const m = aria.match(/\+\s*(\d+)/) || text.match(/\+\s*(\d+)/);
+                if (m) {
+                    extraPhotos = Math.max(extraPhotos, parseInt(m[1], 10));
+                }
+            }
+
+            // Cari juga badge di dalam kontainer foto ulasan
+            const badgeEls = Array.from(card.querySelectorAll('.KtCyie span, .KtRffc span, .review-photos span, button.Tya61d span, button.Tya61d div'));
+            for (const b of badgeEls) {
+                if (isAuthorOrActionElement(b)) continue;
+                const m = (b.innerText || b.textContent || '').trim().match(/^\+\s*(\d+)$/);
+                if (m) {
+                    extraPhotos = Math.max(extraPhotos, parseInt(m[1], 10));
+                }
+            }
+
+            if (extraPhotos > 0) {
+                return (uniqueThumbs.length - 1) + extraPhotos;
+            }
+            return uniqueThumbs.length;
+        }
+
+        // Method 2: Deteksi elemen media foto Google Review (grass-cs, googleusercontent.com/p/, gps-proxy)
+        const mediaElements = Array.from(card.querySelectorAll('button, [role="button"], img, div[style*="background-image"]'))
+            .filter(el => {
+                if (isAuthorOrActionElement(el)) return false;
+                const style = el.style?.backgroundImage || '';
+                const src = el.getAttribute('src') || '';
+                return /grass-cs|googleusercontent\.com\/p\/|googleusercontent\.com\/gps-proxy/i.test(style) ||
+                       /grass-cs|googleusercontent\.com\/p\/|googleusercontent\.com\/gps-proxy/i.test(src);
+            });
+        const uniqueMedia = Array.from(new Set(mediaElements));
+        if (uniqueMedia.length > 0) {
+            return uniqueMedia.length;
+        }
+
+        // Method 3: Analisis aria-label foto ulasan ("Foto 1 di ulasan ...", "Foto 1 dari 3", "Photo 1 of 4")
+        let maxFromAria = 0;
+        let countFromAria = 0;
+        const labeledEls = Array.from(card.querySelectorAll('button[aria-label], [role="button"][aria-label], [aria-label]'))
             .filter(el => !isAuthorOrActionElement(el));
 
-        for (const el of labeledElements) {
+        for (const el of labeledEls) {
             const label = (el.getAttribute('aria-label') || '').toLowerCase();
             const m1 = label.match(/(?:photo|foto)\s+\d+\s*(?:of|dari|\/)\s*(\d+)/i);
             if (m1) {
-                const count = parseInt(m1[1], 10);
-                if (count > maxAriaTotal) maxAriaTotal = count;
+                const total = parseInt(m1[1], 10);
+                if (total > maxFromAria) maxFromAria = total;
             }
             const m2 = label.match(/\d+\s*(?:of|dari)\s*(\d+)\s*(?:photos?|foto)/i);
             if (m2) {
-                const count = parseInt(m2[1], 10);
-                if (count > maxAriaTotal) maxAriaTotal = count;
+                const total = parseInt(m2[1], 10);
+                if (total > maxFromAria) maxFromAria = total;
             }
-        }
-        if (maxAriaTotal > 0) return maxAriaTotal;
-
-        // 2. Deteksi elemen thumbnail foto ulasan spesifik
-        // Khusus mencari tombol thumbnail review (.Tya61d, .A5v0Ac, di dalam .KtRffc, atau URL foto CDN googleusercontent.com/p/)
-        const photoThumbElements = Array.from(card.querySelectorAll(
-            'button.Tya61d, [role="button"].Tya61d, .KtRffc button, .KtRffc [role="button"], [data-photo-index], [jsaction*="review.photo"], [style*="googleusercontent.com/p/"], img[src*="googleusercontent.com/p/"], .gws-localreviews__review-photos img, .gws-localreviews__review-photos button'
-        )).filter(el => !isAuthorOrActionElement(el));
-
-        const uniqueThumbs = Array.from(new Set(photoThumbElements));
-
-        // 3. Cek badge penambahan foto "+X" (misal ada 5 foto tetapi hanya 3 thumbnail tampil dan yang ke-3 bertuliskan "+2")
-        let extraPhotos = 0;
-        const badgeElements = Array.from(card.querySelectorAll('.KtRffc .p6i4Yc, .KtRffc .XbOph, .KtRffc span, button.Tya61d span, button.Tya61d div, [class*="photo"] span'));
-        for (const badge of badgeElements) {
-            if (isAuthorOrActionElement(badge)) continue;
-            const text = (badge.innerText || badge.textContent || '').trim();
-            const plusMatch = text.match(/^\+\s*(\d+)$/);
-            if (plusMatch) {
-                extraPhotos = Math.max(extraPhotos, parseInt(plusMatch[1], 10));
+            if (/foto\s+\d+\s+di ulasan|photo\s+\d+\s+in review/i.test(label)) {
+                countFromAria++;
             }
         }
 
-        if (uniqueThumbs.length > 0) {
-            return extraPhotos > 0 ? (uniqueThumbs.length + extraPhotos) : uniqueThumbs.length;
-        }
-
-        // 4. Fallback tombol foto spesifik ulasan
-        const specificPhotoButtons = labeledElements.filter(btn => {
-            const label = (btn.getAttribute('aria-label') || '').toLowerCase();
-            return /photo\s+\d+|foto\s+\d+|buka foto|open photo|foto ulasan|review photo/i.test(label);
-        });
-        if (specificPhotoButtons.length > 0) {
-            return specificPhotoButtons.length + extraPhotos;
-        }
+        if (maxFromAria > 0) return maxFromAria;
+        if (countFromAria > 0) return countFromAria;
 
         return 0;
     }
