@@ -46,6 +46,7 @@ th:last-child, td:last-child { min-width: 150px; }
 .review-author { color: #292b31; font-weight: 700; }
 .review-date { display: block; margin-top: 4px; color: #888b92; font-size: 10px; }
 .photo-count { color: #555dc5; font-size: 11px; font-weight: 700; }
+.photo-empty { color: #94a3b8; font-size: 11px; font-weight: 500; }
 .stars { display: block; margin-top: 4px; color: #dfa344; }
 .finding { display: inline-block; margin: 0 4px 4px 0; padding: 4px 6px; border-radius: 3px; background: #f0efff; color: #575fc5; font-size: 10px; font-weight: 700; }
 .finding-high { background: #fff0ec; color: #b94a32; }.finding-low { background: #f1f2f3; color: #62656d; }.finding-clear { background: #eef7e8; color: #4f8130; }

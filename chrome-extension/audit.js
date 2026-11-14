@@ -93,8 +93,10 @@ function exportAuditXls() {
     const exportDate = new Date().toLocaleString('id-ID');
     const headers = ['No', 'Nama reviewer', 'Tanggal review', 'Rating', 'Foto kontributor', 'Foto pada review', 'Komentar review', 'Jumlah kata', 'Balasan pemilik', 'Temuan audit'];
     const bodyRows = reviews.map((review, index) => {
-        const contributorPhotoCount = Number.isInteger(review.reviewerPhotoCount) ? review.reviewerPhotoCount : 'Tidak tersedia';
-        const reviewPhotoCount = Number.isInteger(review.reviewPhotoCount) ? review.reviewPhotoCount : 'Tidak tersedia';
+        const contributorPhotoCount = Number.isInteger(review.reviewerPhotoCount) ? `${review.reviewerPhotoCount} foto` : 'Tidak tersedia';
+        const reviewPhotoCount = Number.isInteger(review.reviewPhotoCount)
+            ? (review.reviewPhotoCount > 0 ? `${review.reviewPhotoCount} foto` : 'Tanpa foto')
+            : 'Tanpa foto';
         const findings = findingsFor(review).map(([label]) => label).join(', ');
         const cells = [
             index + 1,
@@ -177,12 +179,13 @@ function render() {
         const stars = '★'.repeat(Math.max(0, Math.min(5, review.rating))) + '☆'.repeat(5 - Math.max(0, Math.min(5, review.rating)));
         const comment = review.text || 'Review hanya berisi rating';
         const wordCount = Number.isInteger(review.wordCount) ? review.wordCount : countWords(comment);
-        const contributorPhotoCount = Number.isInteger(review.reviewerPhotoCount)
-            ? `${review.reviewerPhotoCount.toLocaleString()} foto`
-            : 'Tidak tersedia';
-        const reviewPhotoCount = Number.isInteger(review.reviewPhotoCount) ? `${review.reviewPhotoCount.toLocaleString()} foto` : 'Tidak tersedia';
-        const reviewPhotoLabel = Number.isInteger(review.reviewPhotoCount) ? `${reviewPhotoCount.toLocaleString()} foto` : reviewPhotoCount;
-        return `<tr><td><span class="review-author">${escapeHtml(review.author)}</span><span class="review-date">${escapeHtml(review.date)}</span><span class="stars">${stars}</span></td><td>${escapeHtml(comment)}${review.reply ? `<span class="owner-reply">Balasan owner: ${escapeHtml(review.reply)}</span>` : ''}</td><td class="word-count">${wordCount.toLocaleString()}</td><td><span class="photo-count">${escapeHtml(contributorPhotoCount)}</span></td><td><span class="photo-count">${escapeHtml(reviewPhotoLabel)}</span></td><td>${findings}</td></tr>`;
+        const contributorPhotoLabel = Number.isInteger(review.reviewerPhotoCount)
+            ? `<span class="photo-count">${review.reviewerPhotoCount.toLocaleString()} foto</span>`
+            : `<span class="photo-empty">Tidak tersedia</span>`;
+        const reviewPhotoLabel = Number.isInteger(review.reviewPhotoCount) && review.reviewPhotoCount > 0
+            ? `<span class="photo-count">${review.reviewPhotoCount.toLocaleString()} foto</span>`
+            : `<span class="photo-empty">Tanpa foto</span>`;
+        return `<tr><td><span class="review-author">${escapeHtml(review.author)}</span><span class="review-date">${escapeHtml(review.date)}</span><span class="stars">${stars}</span></td><td>${escapeHtml(comment)}${review.reply ? `<span class="owner-reply">Balasan owner: ${escapeHtml(review.reply)}</span>` : ''}</td><td class="word-count">${wordCount.toLocaleString()}</td><td>${contributorPhotoLabel}</td><td>${reviewPhotoLabel}</td><td>${findings}</td></tr>`;
     }).join('');
 }
 

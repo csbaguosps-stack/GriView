@@ -498,7 +498,9 @@ class ExcelHelper {
                 $wc = (int)($r['word_count'] ?? (class_exists('Review') ? Review::countWords($r['review_text'] ?? '') : 0));
                 $rating = (int)($r['rating'] ?? 0);
                 $reviewerPhoto = isset($r['reviewer_photo_count']) && is_numeric($r['reviewer_photo_count']) ? $r['reviewer_photo_count'] . ' foto' : 'Tidak tersedia';
-                $reviewPhoto = isset($r['review_photo_count']) && is_numeric($r['review_photo_count']) ? $r['review_photo_count'] . ' foto' : 'Tidak tersedia';
+                $reviewPhoto = isset($r['review_photo_count']) && is_numeric($r['review_photo_count']) 
+                    ? ((int)$r['review_photo_count'] > 0 ? (int)$r['review_photo_count'] . ' foto' : 'Tanpa foto') 
+                    : 'Tanpa foto';
             ?>
             <tr class="<?= $isAlt ? 'row-alt' : '' ?>">
                 <td class="td-cell td-num"><?= $no++ ?></td>
