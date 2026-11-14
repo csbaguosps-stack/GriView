@@ -1,5 +1,5 @@
 <!-- License: by cs.baguosps@gmail.com -->
-# 📍 GriView - Google Business Review Audit & Analytics Platform
+# 📍 GriView - Google Maps Review Audit & Analytics Platform
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.0%2B-777BB4?style=flat&logo=php&logoColor=white)](https://www.php.net/)
 [![License](https://img.shields.io/badge/License-by%20cs.baguosps%40gmail.com-blue.svg)](mailto:cs.baguosps@gmail.com)
@@ -7,214 +7,193 @@
 [![Architecture](https://img.shields.io/badge/Architecture-MVC%20%2B%20JSON%20Database-green.svg)](app/)
 
 <p align="center">
-  <img src="assets/preview.png" alt="GriView Scraper - Google Maps Intelligence Dashboard" width="100%">
+  <img src="assets/preview.png" alt="GriView Dashboard - Google Maps Review Audit & Analytics" width="100%">
 </p>
 
-**GriView** adalah platform audit dan analitik ulasan Google Maps berbasis web yang dilengkapi dengan **Google Chrome Extension (Manifest V3)** resmi. Dirancang untuk membantu bisnis, konsultan, dan pemilik brand dalam mengaudit, menyaring, menganalisis reputasi, serta mengekspor ulasan Google Maps ke format **Microsoft Excel (.XLS) eksekutif yang rapi dan terformat**.
+**GriView** is an intuitive, all-in-one Google Maps review audit and reputation analytics platform paired with an official **Google Chrome Extension (Manifest V3)**.
 
-Dibangun dengan arsitektur **MVC (Model-View-Controller)** murni, database portabel **JSON Flat-File (Zero Configuration)**, antarmuka responsif **Bootstrap 5.3**, visualisasi **Chart.js**, dan sistem **Auto-Kompresi Aset Gambar**.
-
----
-
-## 🌟 Fitur Utama
-
-### 1. 🔍 Audit Ulasan Google Maps via Chrome Extension (Client-Side)
-- **Auto-Scroll & Scraping Cepat**: Menggulir otomatis ulasan Google Maps hingga **1.000 ulasan** secara stabil langsung dari browser pengguna.
-- **Bypass Captcha & Blokir IP**: Berjalan di sisi klien (browser pengguna) yang sudah terotentikasi oleh Google, sehingga bebas dari pemblokiran IP server dan tanpa butuh API Key berbayar.
-- **Deteksi Foto & Panjang Ulasan**: Otomatis mengekstrak foto kontributor, lampiran foto ulasan, menghitung jumlah kata per ulasan, serta menandai ulasan singkat.
-- **Auto-Sync & Auto-Save**: Begitu proses audit selesai, ekstensi otomatis mengirim dan menyimpan seluruh data ke database web GriView serta otomatis membuka halaman hasil audit.
-
-### 2. 📅 Filter Cerdas & Pengelolaan Review
-- **Filter Berdasarkan Periode / Bulan**: Tampilkan ulasan per bulan tertentu (contoh: *Oktober 2026*, *September 2026*, dst.) lengkap dengan statistik rata-rata rating bulan tersebut.
-- **Filter Rating Bintang**: Saring ulasan bintang 1 sampai 5.
-- **Filter Lampiran Foto**: Tampilkan semua ulasan, hanya ulasan berfoto, atau ulasan tanpa foto.
-- **Filter Sentimen**: Klasifikasi otomatis ulasan Positif (⭐⭐⭐⭐-⭐⭐⭐⭐⭐), Netral (⭐⭐⭐), dan Negatif (⭐-⭐⭐).
-- **Status Balasan Owner**: Deteksi ulasan yang sudah dibalas oleh pemilik bisnis vs ulasan yang belum direspon.
-- **Hapus Data Terfilter**: Opsi hapus data massal yang aman dan fleksibel berdasarkan filter cabang atau periode yang sedang aktif dipilih.
-
-### 3. 📊 Ekspor Laporan Excel (.XLS) Eksekutif
-- Format **XML Spreadsheet (.XLS)** berstandar industri yang langsung rapi saat dibuka di **Microsoft Excel**, **Google Sheets**, maupun **WPS Office**.
-- **Kop Laporan Resmi**: Nama brand, cabang toko, periode tanggal, waktu ekspor, dan ringkasan eksekutif.
-- **Tabel Ringkasan KPI**: Total ulasan, rating rata-rata, persentase sentimen positif/negatif, dan tingkat respon pemilik.
-- **Tabel Data Rapi**: Header berlatar navy gelap, font rapi, teks ulasan *wrap-text* otomatis, badge sentimen berwarna, dan rating bintang simbolis (`★★★★★`).
-- Tersedia pula opsi ekspor format **CSV** dan **JSON**.
-
-### 4. 📈 Dashboard Analitik & Tren Reputasi (Chart.js)
-- Grafik garis tren volume ulasan dan fluktuasi rata-rata rating dari waktu ke waktu.
-- Diagram donat distribusi sentimen pelanggan (Positif, Netral, Kritis/Negatif).
-- Diagram batang sebaran rating bintang 1 hingga 5.
-- Metrik tingkat respon owner (*Response Rate*).
-
-### 5. 🎨 Pusat Pengaturan Branding & Auto-Kompresi
-- **Kustomisasi Brand Web**: Upload Logo Utama Website, Favicon browser, dan Thumbnail Banner (OpenGraph / Social Share) dengan *Live Preview*.
-- **Kustomisasi Ekstensi Chrome**: Upload ikon ekstensi, ubah nama, versi, dan deskripsi ekstensi yang langsung tersinkronisasi ke `manifest.json`.
-- **Auto-Kompresi Otomatis (Level 9 GD)**: Setiap gambar yang diunggah otomatis di-resize dan dikompresi ke tingkat kompresi maksimal (PNG Level 9 / Web-ready) agar web sangat cepat diakses tanpa boros bandwidth.
-- **Auto-Generate & Pack ZIP**: Setiap perubahan pengaturan otomatis menyusun ulang arsip paket ekstensi `assets/griview-chrome-extension.zip`.
-- **Fitur Sinkronisasi 1-Klik**: Tombol *"Samakan dari Favicon"* untuk langsung menyelaraskan ikon ekstensi dari favicon web, serta tombol *"Auto-Kompres Aset"* untuk mengompres ulang seluruh aset kapan saja.
+Designed for business owners, agency consultants, and reputation managers, GriView makes it effortless to scrape, filter, analyze, and export Google Maps customer reviews into beautifully formatted, executive-ready **Microsoft Excel (.XLS)** spreadsheets.
 
 ---
 
-## 🏛️ Struktur Direktori Proyek
+## 🌟 Key Features
 
-```
+### 1. 🔍 Client-Side Google Maps Review Scraper
+- **Safe & Browser-Based**: Runs directly inside your browser. Because scraping happens through your active Google session, there is **zero risk of IP bans** and **no paid Google API keys required**.
+- **Smooth Auto-Scrolling**: Effortlessly collects up to **1,000 reviews** per business with customizable limits (50, 100, 200, 500, or 1,000 reviews).
+- **Flexible Floating Stop Button**: Stop the extraction process at any time and immediately view or export the reviews collected so far.
+- **Accurate Photo & Content Detection**: Automatically detects review photos (including multi-photo galleries and overflow badges), reviewer lifetime contribution badges, word count, and flags brief/spam-like reviews.
+
+### 2. 🛡️ 100% Standalone Chrome Extension Mode
+- **No Web Server Required**: The extension can operate completely standalone. Users can audit Google Maps places and export Excel (.XLS) spreadsheets entirely inside their browser.
+- **Interactive Toolbar Popup**: Click the GriView extension icon in your toolbar to paste a Google Maps link, select your review limit, and start auditing in one click.
+- **Auto-Sync to Web Dashboard**: When connected to the GriView web platform, all scraped reviews are automatically saved and organized into your central database.
+
+### 3. 📊 Executive Excel (.XLS) Export
+- **One-Click Export**: Generates professional, clean **XML Spreadsheet (.XLS)** files compatible with **Microsoft Excel**, **Google Sheets**, and **WPS Office**.
+- **Formatted Header & KPI Summary**: Includes business name, branch address, review totals, average star rating, and customer sentiment distribution.
+- **Visual Styling**: Dark navy table headers, auto wrap-text for long review comments, visual star ratings (`★★★★★`), and color-coded sentiment tags.
+
+### 4. 📈 Interactive Analytics Dashboard (Chart.js)
+- **Review Volume & Rating Trends**: Track how your customer satisfaction and review volume evolve over months.
+- **Sentiment Breakdown**: Automatic categorization into Positive (4-5 stars), Neutral (3 stars), and Critical/Negative (1-2 stars).
+- **Rating Distribution**: Clear breakdown of 1-star through 5-star ratings.
+- **Owner Response Rate**: Monitor how many reviews have been answered versus how many are still pending a response.
+
+### 5. ⚙️ Zero-Config Database & Easy Branding
+- **Zero-Setup Database**: Uses a lightweight flat-file JSON storage (`app/data/`). No MySQL setup, database users, or SQL migrations needed.
+- **Custom Branding**: Easily upload your company logo, favicon, and social preview banners from the settings page with built-in image compression (PNG Level 9 GD).
+
+---
+
+## 🏛️ Project Directory Structure
+
+```text
 griview/
-├── index.php                          # Front Controller & Router (MVC)
-├── .htaccess                          # Proteksi keamanan berkas data & MIME config
-├── README.md                          # Dokumentasi resmi aplikasi
+├── index.php                          # Front Controller & MVC Router
+├── .htaccess                          # Apache security rules & MIME configuration
+├── README.md                          # Documentation (English)
 ├── app/
 │   ├── config/
-│   │   └── config.php                 # Konfigurasi aplikasi, ROOT_DIR & auto-detect BASE_URL
+│   │   └── config.php                 # App configuration & automatic BASE_URL detection
 │   ├── controllers/
-│   │   ├── ReviewController.php       # Manajemen ulasan, filter, & ekspor XLS
-│   │   ├── StoreController.php        # Manajemen cabang toko & profil bisnis
-│   │   ├── AnalyticsController.php    # Visualisasi data, tren, & grafik Chart.js
-│   │   ├── ExtensionController.php    # API bridge & download ZIP ekstensi
-│   │   └── SettingsController.php     # Pusat branding, auto-kompresi, & upload aset
+│   │   ├── ReviewController.php       # Review management, filters, and XLS export
+│   │   ├── StoreController.php        # Store locations & business profiles
+│   │   ├── AnalyticsController.php    # Visual analytics and Chart.js metrics
+│   │   ├── ExtensionController.php    # Chrome extension sync bridge & ZIP downloads
+│   │   └── SettingsController.php     # Branding center & image compression
 │   ├── models/
-│   │   ├── Review.php                 # Logika data ulasan & word counter
-│   │   ├── Store.php                  # Logika data cabang toko
-│   │   └── PlaceConfig.php            # Logika konfigurasi branding & preferensi fungsi
+│   │   ├── Review.php                 # Review data model and word counter
+│   │   ├── Store.php                  # Store data model
+│   │   └── PlaceConfig.php            # App settings and branding data
 │   ├── helpers/
-│   │   ├── JsonDatabase.php           # Flat-file JSON database handler (ACID-safe)
-│   │   └── ExcelHelper.php            # Generator file XLS eksekutif terformat rapi
+│   │   ├── JsonDatabase.php           # Safe flat-file JSON database handler
+│   │   └── ExcelHelper.php            # Executive XML Excel (.XLS) spreadsheet generator
 │   ├── views/
-│   │   ├── layouts/
-│   │   │   ├── header.php             # Meta tag, dynamic favicon, CSS library
-│   │   │   ├── navbar.php             # Navbar responsif dengan logo kustom
-│   │   │   └── footer.php             # Modal dialog, script bootstrap, & JS bridge
-│   │   ├── reviews/                   # Tampilan audit ulasan (Tabel & Filter)
-│   │   ├── store/                     # Tampilan manajemen cabang toko
-│   │   ├── analytics/                 # Tampilan grafik & dashboard analitik
-│   │   ├── extension/                 # Tampilan panduan & download ekstensi
-│   │   └── settings/                  # Tampilan pusat branding & pengaturan fungsi
-│   └── data/
-│       ├── reviews.json               # Database penyimpanan data ulasan
-│       ├── stores.json                # Database data cabang toko
-│       ├── settings.json              # Database konfigurasi & branding aktif
-│       └── jobs.json                  # Riwayat status job scraping
+│   │   ├── layouts/                   # Header, navbar, and footer layouts
+│   │   ├── reviews/                   # Audit tables, search, and filtering views
+│   │   ├── store/                     # Store location management
+│   │   ├── analytics/                 # Charts and performance dashboard
+│   │   ├── extension/                 # Extension download and installation guide
+│   │   └── settings/                  # Branding and system preferences
+│   └── data/                          # Auto-created JSON data storage
+│       ├── reviews.json               # Saved review records
+│       ├── stores.json                # Saved business locations
+│       ├── settings.json              # App settings and branding config
+│       └── jobs.json                  # Background audit job logs
 ├── assets/
-│   ├── css/style.css                  # Custom styling responsif & tema modern
-│   ├── uploads/                       # Direktori penyimpanan logo, favicon, thumbnail
-│   └── griview-chrome-extension.zip   # Paket ZIP installer ekstensi terkompresi otomatis
+│   ├── css/style.css                  # Modern UI styles
+│   ├── uploads/                       # Custom logos, favicons, and banners
+│   └── griview-chrome-extension.zip   # Packaged Chrome extension installer
 └── chrome-extension/
-    ├── manifest.json                  # Konfigurasi Google Chrome Extension Manifest V3
-    ├── icons/                         # Ikon resmi ekstensi (16px, 48px, 128px)
-    ├── background.js                  # Service worker pengelola antrean audit
-    ├── maps-audit.js                  # Script auto-scroll & ekstraksi ulasan Google Maps
-    ├── griview-bridge.js              # Jembatan komunikasi web GriView & ekstensi
-    ├── audit.html                     # Halaman ringkasan hasil audit ekstensi
-    ├── audit.js                       # Logika penyimpanan & ekspor lokal ekstensi
-    ├── audit.css                      # Styling antarmuka ekstensi
-    ├── search.js                      # Injector tombol audit pada Google Search
-    └── search.css                     # Styling tombol audit di Google Search
+    ├── manifest.json                  # Manifest V3 extension configuration
+    ├── icons/                         # Extension icons (16px, 48px, 128px)
+    ├── background.js                  # Background service worker
+    ├── maps-audit.js                  # Google Maps review scraper engine
+    ├── griview-bridge.js              # Communication bridge between web app and extension
+    ├── popup.html / popup.js          # Toolbar popup interface
+    ├── audit.html / audit.js          # Standalone review audit results and export page
+    └── search.js                      # Injector for Google Search Knowledge Panels
 ```
 
 ---
 
-## 🚀 Panduan Menjalankan di Komputer Lokal (XAMPP / Windows)
+## 🧭 Chrome Extension Installation
 
-1. **Letakkan Proyek di Folder Web Server**:
-   Salin folder proyek ini ke `C:\xampp\htdocs\griview`.
+You can install and use the Chrome extension in less than a minute:
 
-2. **Nyalakan Apache di XAMPP**:
-   - Buka **XAMPP Control Panel**.
-   - Klik tombol **Start** pada modul **Apache** *(MySQL tidak wajib karena database menggunakan JSON flat-file)*.
+1. **Download or Locate the Extension**:
+   - Use the `chrome-extension/` directory included in this repository, or download `assets/griview-chrome-extension.zip` and extract it.
+2. **Open Extensions in Chrome**:
+   - In Google Chrome, navigate to `chrome://extensions/`.
+3. **Enable Developer Mode**:
+   - Toggle the **Developer mode** switch in the top-right corner.
+4. **Load the Extension**:
+   - Click **Load unpacked** (top-left) and select the `chrome-extension/` folder.
+5. **Pin & Start Auditing**:
+   - Pin **GriView** to your browser toolbar.
+   - Open any Google Maps location, click the GriView icon, choose your review target limit, and click **Mulai Audit (Start Audit)**!
 
-3. **Buka Aplikasi di Browser**:
-   Buka peramban browser Anda dan akses:
+> 💡 **Tip:** Whenever you update the extension code, simply click the **Reload (🔄)** icon on the GriView card inside `chrome://extensions`.
+
+---
+
+## 🚀 Running the Web Platform Locally (XAMPP / PHP)
+
+If you want the full web dashboard with persistent database storage and analytics:
+
+### Method 1: Using XAMPP (Windows)
+1. Copy or clone this folder into:
+   ```text
+   C:\xampp\htdocs\griview
    ```
+2. Open **XAMPP Control Panel** and click **Start** next to **Apache** *(MySQL is not required)*.
+3. Open your browser and visit:
+   ```text
    http://localhost/griview/
    ```
 
-4. **Atau Menggunakan PHP Built-in Server**:
+### Method 2: Using the Built-in PHP Server
+1. Open your terminal or PowerShell:
    ```powershell
    cd C:\xampp\htdocs\griview
-   C:\xampp\php\php.exe -S localhost:8080
+   php -S localhost:8080
    ```
-   Lalu buka `http://localhost:8080` di browser.
+2. Open `http://localhost:8080` in your browser.
 
 ---
 
-## 🧭 Cara Memasang Ekstensi di Google Chrome
+## 🌐 Deploying to Web Hosting (cPanel / DirectAdmin / VPS)
 
-1. Buka menu **Extension Chrome** pada navbar GriView (atau buka tab **Ikon & Identitas Ekstensi** di menu Pengaturan).
-2. Unduh berkas **`griview-chrome-extension.zip`** lalu ekstrak ke komputer Anda (atau langsung gunakan folder `chrome-extension/`).
-3. Buka browser **Google Chrome** dan masuk ke alamat:
-   ```
-   chrome://extensions/
-   ```
-4. Aktifkan sakelar **"Developer mode" (Mode Pengembang)** di pojok kanan atas.
-5. Klik tombol **"Load unpacked" (Muat yang belum dibongkar)** di pojok kiri atas, lalu pilih folder `chrome-extension`.
-6. Ekstensi **GriView Review Audit** siap digunakan!
+GriView is designed to be **Zero Configuration (Plug and Play)**:
 
-> 💡 **Tips Reload Ekstensi:** Jika Anda baru saja memperbarui ikon atau nama ekstensi di web GriView, cukup buka `chrome://extensions` lalu klik ikon **Reload (🔄)** pada kartu ekstensi untuk langsung menerapkan perubahan.
-
----
-
-## 🌐 Panduan Upload ke Web Hosting (cPanel / DirectAdmin / VPS)
-
-Aplikasi GriView sudah dirancang dengan konsep **Zero Configuration / Plug-and-Play**:
-
-1. **Tanpa Perlu Setup MySQL**: Seluruh data tersimpan otomatis di berkas JSON (`app/data/`). Anda tidak perlu membuat database MySQL, username, atau password database.
-2. **Auto-Detect Base URL**: Sistem otomatis mendeteksi protokol (`http` / `https`), domain (`domainanda.com`), subdomain (`griview.domainanda.com`), maupun subfolder tanpa perlu mengubah baris kode apa pun.
-3. **Auto-Sync Ekstensi**: Saat web diakses di hosting baru, ekstensi Chrome secara otomatis menyesuaikan target koneksi ke domain hosting tersebut.
-
-### Langkah-Langkah Deploy ke Hosting:
-1. Kompres seluruh isi folder proyek (`app`, `assets`, `chrome-extension`, `index.php`, `.htaccess`) menjadi satu file `.zip`.
-2. Upload berkas `.zip` ke File Manager hosting Anda (misal ke `public_html` atau subdomain).
-3. Ekstrak berkas `.zip` di direktori tujuan hosting.
-4. Pastikan izin akses (*permission*) folder berikut dapat ditulis (*writable*):
-   - `app/data/` (Permission `755` atau `775`)
-   - `assets/uploads/` (Permission `755` atau `775`)
-   - `assets/` (Permission `755` atau `775`)
-   - `chrome-extension/` (Permission `755` atau `775`)
-5. Pastikan hosting menggunakan **PHP 8.0 ke atas** dengan ekstensi **`gd`** dan **`zip`** aktif.
-6. Akses domain Anda di browser, dan GriView siap digunakan secara penuh!
+1. **No MySQL Database Setup**: Everything is saved to lightweight JSON files in `app/data/`. You do not need to configure database credentials.
+2. **Automatic Base URL Detection**: The app automatically identifies whether it is running on `http`, `https`, a domain, a subdomain, or a subfolder.
+3. **Deployment Steps**:
+   - Compress the project files (`app`, `assets`, `chrome-extension`, `index.php`, `.htaccess`) into a `.zip` file.
+   - Upload and extract the archive into your web root (e.g., `public_html` or a subdomain folder).
+   - Ensure the following directories have write permissions (`755` or `775`):
+     - `app/data/`
+     - `assets/uploads/`
+     - `assets/`
+     - `chrome-extension/`
+   - Ensure your hosting environment runs **PHP 8.0 or newer** with the standard **`gd`** and **`zip`** extensions enabled.
 
 ---
 
-## 📝 Catatan Rilis & Pembaruan (Changelog)
+## 📝 Changelog & Recent Updates
 
-### 🚀 Versi 1.0.6
-- **🖱️ Menu Form Popup Interaktif di Toolbar Chrome:**
-  - Menjadikan ikon ekstensi Chrome di toolbar dapat diklik langsung untuk memunculkan popup menu form modern.
-  - Form audit interaktif: input tautan Google Maps (share link/URL) atau nama bisnis, pilihan limit ulasan dinamis (50, 100, 200, 500, 1.000) dengan preset chips instan, dan tombol **Mulai Audit**.
-  - Fitur deteksi otomatis tab aktif: mendeteksi jika pengguna sedang membuka tab Google Maps / Google Search dan menyediakan tombol "Pakai" untuk mengisi form otomatis.
-- **🎨 Tema Cerah Modern (White & Blue Theme):**
-  - Desain popup modern dengan palet warna dominan putih bersih (`#ffffff`) dan biru royal (`#2563eb`), font crisp, dan bayangan elegan.
-- **🔄 Tombol Reload Ekstensi Cepat:**
-  - Menambahkan tombol **Reload Ekstensi** (`chrome.runtime.reload()`) langsung di dalam popup sehingga pengguna tidak perlu lagi membuka `chrome://extensions` secara manual.
-- **🛡️ Mode Ekstensi Mandiri (100% Standalone tanpa XAMPP):**
-  - Ekstensi kini dapat digunakan sepenuhnya mandiri oleh customer tanpa memerlukan instalasi XAMPP/PHP.
-  - Laporan audit dan ekspor file spreadsheet Excel (.XLS) berjalan 100% di browser via JavaScript Blob.
-  - Penambahan identitas hak cipta resmi: `Copyright by cs.baguosps@gmail.com`.
-- **📦 Pembaruan Paket Chrome Extension:**
-  - Sinkronisasi versi ekstensi ke **v1.0.6** pada `manifest.json`, `griview-bridge.js`, `config.php`, `settings.json`, dan arsip `assets/griview-chrome-extension.zip`.
+### 🚀 Version 1.0.6
+- **Modern Toolbar Popup Interface**:
+  - Interactive popup form in the Chrome toolbar.
+  - Paste any Google Maps URL or place name, pick a review limit preset (50, 100, 200, 500, 1,000), and click **Start Audit**.
+  - Auto-detects open Google Maps or Google Search tabs.
+- **Enhanced Review Photo Counting**:
+  - Added support for modern Google Maps image CDNs (`grass-cs`, `/p/`, `gps-proxy`) and `.KtCyie` photo containers.
+  - Accurate detection of multi-photo galleries and overflow badges (e.g., `+2 photos`).
+  - Separates lifetime contributor photo counts from review-attached photos.
+- **Standalone Offline Mode**:
+  - The extension can run 100% independently without requiring a local PHP or XAMPP server.
+  - In-browser Excel (.XLS) spreadsheet generation and download.
+- **One-Click Extension Reload**:
+  - Quick reload button directly inside the popup interface to refresh code without opening settings.
 
-### 🚀 Versi 1.0.5
-- **🎯 Dynamic Scrape Limit & Tombol Stop Fleksibel:**
-  - Penambahan tombol melayang **⏹ Stop & Ambil Data ({count})** pada halaman scraping Google Maps & Search, memungkinkan pengguna menghentikan scraping kapan saja dan langsung memproses ulasan yang telah terkumpul.
-  - Perbaikan bug batasan ulasan sehingga opsi filter (50, 100, 200, 500, 1.000) bekerja secara presisi tanpa tembus ke 1.000 review.
-- **🔄 Pembaruan Tampilan Real-Time di Tab Awal (GriView Web):**
-  - Tab awal GriView kini menampilkan status langsung (*live progress bar*, hitungan ulasan, dan pesan progres).
-  - Tampilan modal di tab awal **otomatis berubah** menjadi notifikasi sukses (`Auto-Audit Selesai! 🎉`) dengan ringkasan jumlah ulasan dan status database saat proses selesai.
-  - Tersedia 3 tombol aksi instan: **[Buka Halaman Audit]**, **[Download File XLS]**, dan **[Selesai & Muat Ulang]**.
-  - Endpoint `checkSyncStatus` dan komunikasi *cross-tab* via `griview-bridge.js` memastikan status selalu tersinkronisasi 100%.
-- **🧹 Penyederhanaan Kolom Aksi & Pembersihan Fitur Balas Ulasan:**
-  - Menghapus tombol dan modal tanggapi/balas review manual yang sebelumnya hanya tersimpan lokal dan tidak dapat otomatis terbit ke Google Maps.
-  - Kolom aksi tabel audit difokuskan secara bersih untuk manajemen hapus ulasan.
-- **📦 Pembaruan Paket Chrome Extension:**
-  - Sinkronisasi versi ekstensi ke **v1.0.5** pada `manifest.json`, `griview-bridge.js`, dan arsip `assets/griview-chrome-extension.zip`.
+### 🚀 Version 1.0.5
+- **Dynamic Scrape Limits & Floating Stop Button**:
+  - Floating **Stop & Collect** button allows users to finish review extraction at any moment without losing collected records.
+- **Real-Time Web Sync Progress**:
+  - Live progress bar, review counters, and instant notifications when audits complete.
+  - Cleaned up action menus for streamlined review management and export.
 
 ---
 
-## 📜 Lisensi & Hak Cipta
+## 📜 License & Copyright
 
 ```text
 License: by cs.baguosps@gmail.com
-Hak Cipta (c) 2026 GriView Project. All rights reserved.
-Kontak & Dukungan: cs.baguosps@gmail.com
+Copyright (c) 2026 GriView Project. All rights reserved.
+Contact & Inquiries: cs.baguosps@gmail.com
 ```
 
 ---
-*Dibuat dengan dedikasi untuk efisiensi audit reputasi bisnis dan kecerdasan ulasan digital.*
+*Built with care for business reputation intelligence and seamless Google Maps review audits.*
